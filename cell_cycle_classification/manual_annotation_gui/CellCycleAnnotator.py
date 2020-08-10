@@ -8,13 +8,15 @@ Created on Fri Aug  7 16:15:48 2020
 
 import sys
 import tables
+import numpy as np
 import pandas as pd
 from functools import partial
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, qRgb
 from PyQt5.QtWidgets import (
-    QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout, QMessageBox)
+    QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout, QMessageBox,
+    QCheckBox)
 
 from HDF5VideoPlayer import HDF5VideoPlayerGUI, LineEditDragDrop
 
@@ -180,6 +182,19 @@ def _updateUI(ui):
     ui.horizontalLayout_3.addWidget(ui.label_track_counter)
 
     # fourth layer
+
+    ui.single_frame_contrast_cb = QCheckBox(ui.centralWidget)
+    ui.horizontalLayout_4.addWidget(ui.single_frame_contrast_cb)
+    ui.single_frame_contrast_cb.setText("frame-by-frame contrast")
+
+    ui.roi_only_cb = QCheckBox(ui.centralWidget)
+    ui.horizontalLayout_4.addWidget(ui.roi_only_cb)
+    ui.roi_only_cb.setText("ROI only")
+
+    ui.draw_point_cb = QCheckBox(ui.centralWidget)
+    ui.horizontalLayout_4.addWidget(ui.draw_point_cb)
+    ui.draw_point_cb.setText("Show cell centre")
+
     ui.save_b = QPushButton(ui.centralWidget)
     ui.horizontalLayout_4.addWidget(ui.save_b)
     ui.save_b.setText("Save")
@@ -205,7 +220,7 @@ def check_good_input(fname):
     if is_hdf5:
         with tables.File(fname, 'r') as fid:
             is_good = all(df in fid
-                          for df in ['full_data', '/annotations_df'])
+                          for df in ['/full_data', '/annotations_df'])
     return is_good
 
 
@@ -253,6 +268,10 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
         self.ui.next_track_b.clicked.connect(self.nextTrack_fun)
         self.ui.prev_track_b.clicked.connect(self.prevTrack_fun)
         self.ui.save_b.clicked.connect(self.save_to_disk_fun)
+        self.ui.draw_point_cb.stateChanged.connect(self.updateImage)
+        self.ui.single_frame_contrast_cb.stateChanged.connect(self.updateImage)
+        self.ui.roi_only_cb.stateChanged.connect(self.updateImage)
+        self.ui.roi_only_cb.stateChanged.connect(self.mainImage.zoomFitInView)
         self._setup_buttons()
 
         self.updateVideoFile = self.updateDataset  # alias
@@ -262,6 +281,18 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
     @property
     def frame_step(self):
         return 1
+
+    @property
+    def is_draw_point(self):
+        return self.ui.draw_point_cb.isChecked()
+
+    @property
+    def is_single_frame_contrast(self):
+        return self.ui.single_frame_contrast_cb.isChecked()
+
+    @property
+    def is_tight_on_ROI(self):
+        return self.ui.roi_only_cb.isChecked()
 
     def updateDataset(self, dataset_fname):
 
@@ -283,6 +314,9 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
         # read the big img stack in memory (can be changed in the future)
         with tables.File(dataset_fname, 'r') as fid:
             self.image_group = fid.get_node('/full_data').read()
+        # get min and max
+        self._lowercontrastint, self._uppercontrastint = np.percentile(
+            self.image_group, [0.01, 99.995]).astype(int)
         # adjust parameters for showing
         self.tot_frames = self.image_group.shape[0]
         self.image_height = self.image_group.shape[1]
@@ -310,9 +344,9 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
         # get the data related to the first track to show.
         # should be the first unlabelled one
         track_counter, frame_number = self.find_first_unlabelled_ROI()
-        self.track_id = self.track_ids[track_counter]
-
-        self.updateImGroup(track_counter, at_frame=frame_number)
+        # self.track_id = self.track_ids[track_counter]
+        self.ui.tracks_comboBox.setCurrentIndex(track_counter)
+        self.updateImGroup(track_counter, at_frame=frame_number) # to get it to the right frame
 
         return
 
@@ -326,6 +360,9 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
         # this selects the right range of slider and updates track_id
         if track_counter < 0:
             # this happens when clearing the combobox
+            return
+        if track_counter == self.track_counter:
+            # print('updateImGroup called again on same counter')
             return
 
         self.track_id = int(self.ui.tracks_comboBox.itemText(track_counter))
@@ -370,12 +407,25 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
         min_col = int(round(limits.loc['min', 'x_center'] - self.roi_size/2))
         max_col = int(round(limits.loc['max', 'x_center'] + self.roi_size/2))
 
+        min_row = max(0, min_row)
+        min_col = max(0, min_col)
+        max_row = min(max_row, self.image_height - 1)
+        max_col = min(max_col, self.image_width - 1)
+
         self.track_limits = [min_row, max_row, min_col, max_col]
+        # print(self.track_limits)
 
         return
 
+    def resizeEvent(self, event):
+        # overload cause super's would fail as no self.fid
+        if self.frame_qimg is not None:
+            self.updateImage()
+            self.mainImage.zoomFitInView()
+
     def updateImage(self):
         self.readCurrentFrame()
+        self.mainImage.zoomFitInView()
         self.drawROIBoundaries()
         self.mainImage.setPixmap(self.frame_qimg)
         self._refresh_buttons()
@@ -387,47 +437,92 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
         self.readCurrentROI()
         self._normalizeImage()
 
-    def readCurrentROI(self):
-        # row = self.annotations_df.loc[(self.track_id, self.frame_number)]
-        # xc = int(round(row['x_center']))
-        # yc = int(round(row['y_center']))
-        # roi_min_col = max(0, xc - self.roi_size // 2)
-        # roi_max_col = min(self.image_width, xc + self.roi_size // 2)
-        # roi_min_row = max(0, yc - self.roi_size // 2)
-        # roi_max_row = min(self.image_height, yc + self.roi_size // 2)
-        # self.frame_img = self.image_group[self.frame_number,
-        #                                   roi_min_row:roi_max_row,
-        #                                   roi_min_col:roi_max_col]
+    def _normalizeImage(self):
+        # overload the aprent class's to allow for global contrast
+        if self.frame_img is None:
+            return
 
-        [min_row, max_row, min_col, max_col] = self.track_limits
-        self.frame_img = self.image_group[self.frame_number,
-                                          min_row:max_row,
-                                          min_col:max_col]
+        dd = self.ui.mainGraphicsView.size()
+        self.label_height = dd.height()
+        self.label_width = dd.width()
+
+        # equalize and cast if it is not uint8
+        if self.frame_img.dtype != np.uint8:
+            if self.is_single_frame_contrast:
+                top = self.frame_img.max()
+                bot = self.frame_img.min()
+            else:
+                top = self._uppercontrastint
+                bot = self._lowercontrastint
+
+            self.frame_img = (self.frame_img - bot) * 255. / (top - bot)
+            self.frame_img = np.round(self.frame_img).astype(np.uint8)
+
+        self.frame_qimg = self._convert2Qimg(self.frame_img)
+
+    def readCurrentROI(self):
+
+        if self.is_tight_on_ROI:
+            row = self.annotations_df.loc[(self.track_id, self.frame_number)]
+            xc = int(round(row['x_center']))
+            yc = int(round(row['y_center']))
+            roi_min_col = max(0, xc - self.roi_size // 2)
+            roi_max_col = min(self.image_width, xc + self.roi_size // 2)
+            roi_min_row = max(0, yc - self.roi_size // 2)
+            roi_max_row = min(self.image_height, yc + self.roi_size // 2)
+            self.frame_img = self.image_group[self.frame_number,
+                                              roi_min_row:roi_max_row,
+                                              roi_min_col:roi_max_col]
+        else:
+            [min_row, max_row, min_col, max_col] = self.track_limits
+            self.frame_img = self.image_group[self.frame_number,
+                                              min_row:max_row,
+                                              min_col:max_col]
 
     def drawROIBoundaries(self):
+        # prepare pen, if something is to be drawn
+        if self.is_draw_point or not(self.is_tight_on_ROI):
+            painter = QPainter()
+            painter.begin(self.frame_qimg)
+            pen = QPen()
+            pen.setWidth(2)
+            pen.setColor(QColor(250, 140, 0))
+            painter.setPen(pen)
 
-        # find left, bottom, width, height of box to draw
-        row = self.annotations_df.loc[(self.track_id, self.frame_number)]
-        xc = int(round(row['x_center']))
-        yc = int(round(row['y_center']))
-        # apply offset because FOV is cropped
-        xc = int(xc - self.track_limits[2])
-        yc = int(yc - self.track_limits[0])
+        if self.is_tight_on_ROI:
+            # no rect, only point at centre
+            if self.is_draw_point:
+                # check if roi was cropped
+                if self.frame_img.shape == (self.roi_size, self.roi_size):
+                    xc, yc = self.roi_size // 2, self.roi_size // 2
+                else:
+                    # if roi was cropped, offset xc, yc
+                    row = self.annotations_df.loc[(self.track_id,
+                                                   self.frame_number)]
+                    xc = int(round(row['x_center']))
+                    yc = int(round(row['y_center']))
+                    xc = min(xc, self.roi_size // 2)
+                    yc = min(yc, self.roi_size // 2)
 
-        rect_specs = [xc - self.roi_size // 2,
-                      yc - self.roi_size // 2,
-                      self.roi_size,
-                      self.roi_size]
+                painter.drawPoint(xc, yc)
+        else:
+            # find left, bottom, width, height of box to draw
+            row = self.annotations_df.loc[(self.track_id, self.frame_number)]
+            xc = int(round(row['x_center']))
+            yc = int(round(row['y_center']))
+            # apply offset because FOV is cropped
+            xc = int(xc - self.track_limits[2])
+            yc = int(yc - self.track_limits[0])
 
-        # draw
-        painter = QPainter()
-        painter.begin(self.frame_qimg)
-        pen = QPen()
-        pen.setWidth(2)
-        pen.setColor(QColor(250, 140, 0))
-        painter.setPen(pen)
-        painter.drawRect(*rect_specs)
-        painter.drawPoint(xc, yc)
+            rect_specs = [xc - self.roi_size // 2,
+                          yc - self.roi_size // 2,
+                          self.roi_size,
+                          self.roi_size]
+
+            # draw
+            painter.drawRect(*rect_specs)
+            if self.is_draw_point:
+                painter.drawPoint(xc, yc)
 
     def nextTrack_fun(self):
         self.ui.tracks_comboBox.setCurrentIndex(
