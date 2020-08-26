@@ -4,6 +4,10 @@
 Created on Fri Aug  7 12:17:11 2020
 
 @author: lferiani
+
+This code creates an hdf5 ready to be manually annotated using the annotator ui.
+Starts from a nuclitrack csv file and a folder of tiffs
+Saves the hdf5 dataset in the same folder as the tracking csv
 """
 
 import re
