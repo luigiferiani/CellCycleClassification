@@ -19,14 +19,14 @@ class CellsDataset(Dataset):
 
     LABELS_COLS = ['frame', 'x_center', 'y_center', 'label_is_S_phase']
 
-    def __init__(self, hdf5_filename, which_set='train'):
+    def __init__(self, hdf5_filename, which_set='train', roi_size=80):
 
         self.fname = hdf5_filename
         self.set_name = which_set + '_df'
         # get labels info
         ann_df = pd.read_hdf(hdf5_filename, key='/'+self.set_name)
         self.label_info = ann_df[self.LABELS_COLS]
-        self.roi_size = 80  # size we want to train on
+        self.roi_size = roi_size  #80  # size we want to train on
         with tables.File(self.fname, 'r') as fid:
             self.frame_height = fid.get_node('/full_data').shape[1]
             self.frame_width = fid.get_node('/full_data').shape[2]
@@ -97,6 +97,8 @@ class CellsDataset(Dataset):
         if np.any((pad_v, pad_h)):
             # roi_data = np.pad(roi_data, ((pad_t, pad_b), (pad_l, pad_r)))
             roi_data = np.pad(roi_data, (pad_v, pad_h))
+
+        assert roi_data.shape == (self.roi_size, self.roi_size)
 
         return roi_data
 
