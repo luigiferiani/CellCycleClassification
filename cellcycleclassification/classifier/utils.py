@@ -36,7 +36,7 @@ def get_default_data_path():
 def get_default_log_dir():
     platname = platform.system()
     bg_mac = Path('/Volumes/behavgenom$/')
-    bg_linux = Path.home() / '/net/behavgenom$/'
+    bg_linux = Path.home() / 'net/behavgenom$/'
 
     log_on_bg = Path(
         'Luigi/Data/AlexisBarr_cell_cycle_classification/trained_models')
