@@ -181,3 +181,5 @@ def train_model(
     torch.save(
         training_state, model_savepath)
     print(f'model saved at {model_savepath}')
+    logger.flush()
+    logger.close()
