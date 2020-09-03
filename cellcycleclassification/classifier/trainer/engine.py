@@ -65,13 +65,13 @@ def evaluate_one_epoch(
         batch_imgs, batch_labels = data[0].to(device), data[1].to(device)
         # forwards only
         out = model(batch_imgs)
-        loss = criterion(out, batch_labels)
+        _loss = criterion(out, batch_labels)
         batch_predictions = torch.argmax(out, axis=1)
         # store labels and predictions
         labels.append(batch_labels.cpu())
         predictions.append(batch_predictions.cpu())
         # store mini batch loss in accumulator
-        val_loss += loss.item()
+        val_loss += _loss.item()
     # average
     val_loss /= mbc
     # concatenate accumulators into np arrays for ease of use
