@@ -14,6 +14,7 @@ from cellcycleclassification.classifier.models import cnn_tierpsy
 AVAILABLE_MODELS = {
     'cnn_tierpsy': cnn_tierpsy.CNN_tierpsy(),
     'cnn_tierpsy_roi48': cnn_tierpsy.CNN_tierpsy_roi48(),
+    'cnn_tierpsy_roi48_v2': cnn_tierpsy.CNN_tierpsy_roi48_v2(),
     }
 
 
@@ -24,6 +25,10 @@ def get_dataset(model_name, which_split, data_path):
             data_path, which_set=which_split, roi_size=80)
 
     elif model_name == 'cnn_tierpsy_roi48':
+        dataset = datasets.CellsDataset(
+            data_path, which_set=which_split, roi_size=48)
+
+    elif model_name == 'cnn_tierpsy_roi48_v2':
         dataset = datasets.CellsDataset(
             data_path, which_set=which_split, roi_size=48)
 
