@@ -39,7 +39,8 @@ def get_dataset(model_name, which_split, data_path):
 
 
 def get_loss_criterion(model_name):
-    if model_name in ['cnn_tierpsy', 'cnn_tierpsy_roi48']:
+    if model_name in [
+            'cnn_tierpsy', 'cnn_tierpsy_roi48', 'cnn_tierpsy_roi48_v2']:
         criterion = torch.nn.CrossEntropyLoss()
     else:
         raise ValueError('case not coded yet')
