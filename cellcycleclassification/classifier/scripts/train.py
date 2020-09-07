@@ -297,6 +297,30 @@ SESSIONS = dict(
         n_epochs=120,
         num_workers=4,
         scheduler=None,
+        ),  # done
+    v_02_06=dict(
+        model_name='cnn_tierpsy_roi48_v2',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=120,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_02_07=dict(
+        model_name='cnn_tierpsy_roi48_v2',
+        batch_size=128,
+        learning_rate=1e-3,
+        n_epochs=120,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_02_08=dict(
+        model_name='cnn_tierpsy_roi48_v2',
+        batch_size=256,
+        learning_rate=1e-3,
+        n_epochs=120,
+        num_workers=4,
+        scheduler=None,
         ),
     v_02_50=dict(
         model_name='cnn_tierpsy_roi48_v2',
@@ -311,7 +335,7 @@ SESSIONS = dict(
             patience=3,
             verbose=True
             ),
-        ),
+        ),  # done
     v_02_60=dict(
         model_name='cnn_tierpsy_roi48_v2',
         batch_size=64,
@@ -325,7 +349,7 @@ SESSIONS = dict(
             patience=3,
             verbose=True
             ),
-        ),
+        ),  # done
     )
 
 
