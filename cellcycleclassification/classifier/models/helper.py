@@ -15,6 +15,7 @@ AVAILABLE_MODELS = {
     'cnn_tierpsy': cnn_tierpsy.CNN_tierpsy(),
     'cnn_tierpsy_roi48': cnn_tierpsy.CNN_tierpsy_roi48(),
     'cnn_tierpsy_roi48_v2': cnn_tierpsy.CNN_tierpsy_roi48_v2(),
+    'cnn_tierpsy_roi48_v3': cnn_tierpsy.CNN_tierpsy_roi48_v3(),
     }
 
 
@@ -32,6 +33,10 @@ def get_dataset(model_name, which_split, data_path):
         dataset = datasets.CellsDataset(
             data_path, which_set=which_split, roi_size=48)
 
+    elif model_name == 'cnn_tierpsy_roi48_v3':
+        dataset = datasets.CellsDataset(
+            data_path, which_set=which_split, roi_size=48)
+
     else:
         raise ValueError('case not coded yet')
 
@@ -40,7 +45,11 @@ def get_dataset(model_name, which_split, data_path):
 
 def get_loss_criterion(model_name):
     if model_name in [
-            'cnn_tierpsy', 'cnn_tierpsy_roi48', 'cnn_tierpsy_roi48_v2']:
+            'cnn_tierpsy',
+            'cnn_tierpsy_roi48',
+            'cnn_tierpsy_roi48_v2',
+            'cnn_tierpsy_roi48_v3',
+            ]:
         criterion = torch.nn.CrossEntropyLoss()
     else:
         raise ValueError('case not coded yet')

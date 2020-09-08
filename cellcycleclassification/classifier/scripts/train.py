@@ -305,7 +305,7 @@ SESSIONS = dict(
         n_epochs=120,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_02_07=dict(
         model_name='cnn_tierpsy_roi48_v2',
         batch_size=128,
@@ -313,7 +313,7 @@ SESSIONS = dict(
         n_epochs=120,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_02_08=dict(
         model_name='cnn_tierpsy_roi48_v2',
         batch_size=256,
@@ -321,7 +321,7 @@ SESSIONS = dict(
         n_epochs=120,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_02_50=dict(
         model_name='cnn_tierpsy_roi48_v2',
         batch_size=64,
@@ -350,6 +350,58 @@ SESSIONS = dict(
             verbose=True
             ),
         ),  # done
+    v_03_00=dict(
+        model_name='cnn_tierpsy_roi48_v3',
+        batch_size=64,
+        learning_rate=1e-4,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_03_01=dict(
+        model_name='cnn_tierpsy_roi48_v3',
+        batch_size=64,
+        learning_rate=3e-4,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_03_06=dict(
+        model_name='cnn_tierpsy_roi48_v3',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_03_50=dict(
+        model_name='cnn_tierpsy_roi48_v3',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=ReduceLROnPlateau,
+        scheduler_kwargs=dict(
+            mode='min',
+            factor=0.5,
+            patience=3,
+            verbose=True
+            ),
+        ),
+    v_03_60=dict(
+        model_name='cnn_tierpsy_roi48_v3',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=ReduceLROnPlateau,
+        scheduler_kwargs=dict(
+            mode='max',
+            factor=0.5,
+            patience=3,
+            verbose=True
+            ),
+        ),
     )
 
 
