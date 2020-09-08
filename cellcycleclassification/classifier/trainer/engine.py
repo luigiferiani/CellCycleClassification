@@ -66,7 +66,7 @@ def evaluate_one_epoch(
         # forwards only
         out = model(batch_imgs)
         _loss = criterion(out, batch_labels)
-        if out.shape[1] > 1:
+        if out.ndim > 1:
             batch_predictions = torch.argmax(out, axis=1)
         else:
             batch_predictions = (torch.sigmoid(out) > 0.5).long()
