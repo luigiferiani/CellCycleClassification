@@ -167,7 +167,9 @@ class CNN_tierpsy_roi48_v2(nn.Module):
 
 class CNN_tierpsy_roi48_v3(nn.Module):
     """
-    Same CNN we use for tierpsy worm/non worm, half the channels in each layer
+    Same CNN we use for tierpsy worm/non worm,
+    half the channels in each layer
+    removed a conv/conv/maxpool
     """
     roi_size = 48
 
@@ -196,6 +198,51 @@ class CNN_tierpsy_roi48_v3(nn.Module):
         self.drop_out = nn.Dropout2d(0.5)
         # define fully connected layer:
         self.fc_layers = nn.Sequential(nn.Linear(256*6*6, 2))
+
+    def forward(self, x):
+        x = self.conv_layers(x)  # pass input through conv layers
+        x = self.drop_out(x)
+        # flatten output for fully connected layer, batchize,
+        # -1 do whatever it needs to be
+        x = x.view(x.shape[0], -1)
+        x = self.fc_layers(x)  # pass  through fully connected layer
+        # softmax activation function on outputs,
+        # get probability distribution on output, all ouputs add to 1
+        # x = F.softmax(x, dim=1)
+        return x
+
+
+class CNN_tierpsy_roi48_v4(nn.Module):
+    """
+    Same as v3 but using one node only at end bc binary, needs bcewithlogits
+    """
+    roi_size = 48
+
+    # Class : 1: S phase, 0: non S phase
+    def __init__(self):
+        super().__init__()
+        self.conv_layers = nn.Sequential(
+                nn.Conv2d(1, 8, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),  # activation layer
+                nn.Conv2d(8, 16, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(32),
+                nn.ReLU(),
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2))
+
+        self.drop_out = nn.Dropout2d(0.5)
+        # define fully connected layer:
+        self.fc_layers = nn.Sequential(nn.Linear(256*6*6, 1))
 
     def forward(self, x):
         x = self.conv_layers(x)  # pass input through conv layers
