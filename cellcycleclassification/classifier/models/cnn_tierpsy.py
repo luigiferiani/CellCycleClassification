@@ -254,4 +254,4 @@ class CNN_tierpsy_roi48_v4(nn.Module):
         # softmax activation function on outputs,
         # get probability distribution on output, all ouputs add to 1
         # x = F.softmax(x, dim=1)
-        return x
+        return x.squeeze()  # BCEwithlogitsloss wants same size as labels (1d)
