@@ -48,6 +48,12 @@ def get_dataset(model_name, which_split, data_path):
     return dataset
 
 
+def bcewithlogitsloss_wrapper(logits, labels, **kwargs):
+    # fixes type error with logits being floats and labels being,
+    # as they should be, ints
+    return torch.nn.BCEWithLogitsLoss(logits, labels.float(), **kwargs)
+
+
 def get_loss_criterion(model_name):
     if model_name in [
             'cnn_tierpsy',
@@ -59,7 +65,7 @@ def get_loss_criterion(model_name):
     if model_name in [
             'cnn_tierpsy_roi48_v4',
             ]:
-        criterion = torch.nn.BCEWithLogitsLoss()
+        criterion = bcewithlogitsloss_wrapper()
     else:
         raise ValueError('case not coded yet')
 
