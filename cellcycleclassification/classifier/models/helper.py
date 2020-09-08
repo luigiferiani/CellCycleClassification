@@ -40,18 +40,13 @@ def get_dataset(model_name, which_split, data_path):
 
     elif model_name == 'cnn_tierpsy_roi48_v4':
         dataset = datasets.CellsDataset(
-            data_path, which_set=which_split, roi_size=48)
+            data_path, which_set=which_split, roi_size=48,
+            labels_dtype=torch.float)
 
     else:
         raise ValueError('case not coded yet')
 
     return dataset
-
-
-def bcewithlogitsloss_wrapper(logits, labels, **kwargs):
-    # fixes type error with logits being floats and labels being,
-    # as they should be, ints
-    return torch.nn.BCEWithLogitsLoss(logits, labels.float(), **kwargs)
 
 
 def get_loss_criterion(model_name):
@@ -65,7 +60,7 @@ def get_loss_criterion(model_name):
     if model_name in [
             'cnn_tierpsy_roi48_v4',
             ]:
-        criterion = bcewithlogitsloss_wrapper()
+        criterion = torch.nn.BCEWithLogitsLoss()
     else:
         raise ValueError('case not coded yet')
 

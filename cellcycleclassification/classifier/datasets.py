@@ -19,7 +19,12 @@ class CellsDataset(Dataset):
 
     LABELS_COLS = ['frame', 'x_center', 'y_center', 'label_is_S_phase']
 
-    def __init__(self, hdf5_filename, which_set='train', roi_size=80):
+    def __init__(
+            self,
+            hdf5_filename,
+            which_set='train',
+            roi_size=80,
+            labels_dtype=torch.long):
 
         self.fname = hdf5_filename
         self.set_name = which_set + '_df'
@@ -27,6 +32,7 @@ class CellsDataset(Dataset):
         ann_df = pd.read_hdf(hdf5_filename, key='/'+self.set_name)
         self.label_info = ann_df[self.LABELS_COLS]
         self.roi_size = roi_size  #80  # size we want to train on
+        self.labels_dtype = labels_dtype
         with tables.File(self.fname, 'r') as fid:
             self.frame_height = fid.get_node('/full_data').shape[1]
             self.frame_width = fid.get_node('/full_data').shape[2]
@@ -61,7 +67,7 @@ class CellsDataset(Dataset):
         labels = label_info['label_is_S_phase']
         # labels = np.array(labels, dtype=np.float32).reshape(-1, 1)
         labels = np.array(labels)
-        labels = torch.from_numpy(labels).long()
+        labels = torch.from_numpy(labels).type(self.labels_dtype)
 
         return img, labels
 
