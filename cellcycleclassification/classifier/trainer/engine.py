@@ -77,9 +77,10 @@ def evaluate_one_epoch(
         val_loss += _loss.item()
     # average
     val_loss /= mbc
-    # concatenate accumulators into np arrays for ease of use
+    # concatenate accumulators into np arrays for ease of use.
+    # force labels to int for reporting (some loss criteria need them float)
     predictions = np.concatenate(predictions, axis=0).squeeze()
-    labels = np.concatenate(labels, axis=0).squeeze()
+    labels = np.concatenate(labels, axis=0).squeeze().astype(int)
     # measures
     class_rep = classification_report(labels, predictions, output_dict=True)
     val_accuracy = class_rep['accuracy']
