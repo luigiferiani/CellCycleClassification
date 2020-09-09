@@ -573,6 +573,7 @@ def train_fun(
         n_epochs=session_parameters['n_epochs'],
         batch_size=session_parameters['batch_size'],
         num_workers=session_parameters['num_workers'],
+        is_use_sampler=session_parameters['is_use_sampler'],
         )
 
 
