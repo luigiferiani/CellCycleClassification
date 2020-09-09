@@ -126,7 +126,8 @@ class CellsDatasetMultiClass(Dataset):
             hdf5_filename,
             which_set='train',
             roi_size=80,
-            labels_dtype=torch.long):
+            labels_dtype=torch.long,
+            is_use_default_transforms=True):
 
         self.fname = hdf5_filename
         self.set_name = which_set + '_df'
@@ -149,7 +150,7 @@ class CellsDatasetMultiClass(Dataset):
         # this is now an array with higher values for worse-represented classes
 
         # any transform?
-        if which_set in ['train', 'val']:
+        if is_use_default_transforms and which_set in ['train', 'val']:
             self.transform = transforms.Compose([
                 transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomHorizontalFlip(p=0.5),

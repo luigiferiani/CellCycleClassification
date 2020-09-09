@@ -94,7 +94,7 @@ def evaluate_one_epoch(
         logger.add_scalar('specificity', class_rep['0']['recall'], epoch)
         logger.add_scalar('f1-score', class_rep['1']['f1-score'], epoch)
 
-    return val_loss, val_accuracy
+    return val_loss, val_accuracy, predictions, labels
 
 
 def train_model(
@@ -156,7 +156,7 @@ def train_model(
             epoch,
             logger,
         )
-        val_loss, val_accuracy = evaluate_one_epoch(
+        val_loss, val_accuracy, _, _ = evaluate_one_epoch(
             save_prefix,
             model,
             criterion,
