@@ -14,6 +14,7 @@ from sklearn.metrics import classification_report
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from torch.utils.data.sampler import WeightedRandomSampler
 
 
 def train_one_epoch(
@@ -109,6 +110,7 @@ def train_model(
         n_epochs=100,
         batch_size=64,
         num_workers=4,
+        is_use_sampler=False,
         ):
 
     # add datatime to save_prefix
@@ -116,16 +118,25 @@ def train_model(
     save_prefix = f'{save_prefix}_{strnow}'
 
     # create dataloaders
-    train_loader = DataLoader(
-        train_dataset,
-        shuffle=True,
-        batch_size=batch_size,
-        num_workers=num_workers)
-    val_loader = DataLoader(
-        val_dataset,
-        shuffle=True,
-        batch_size=batch_size,
-        num_workers=num_workers)
+    def _get_loader(dtst):
+        if is_use_sampler:
+            sampler = WeightedRandomSampler(
+                dtst.samples_weights, len(dtst)*4, replacement=True)
+            loader = DataLoader(
+                dtst,
+                sampler=sampler,
+                batch_size=batch_size,
+                num_workers=num_workers)
+        else:
+            loader = DataLoader(
+                dtst,
+                shuffle=True,
+                batch_size=batch_size,
+                num_workers=num_workers)
+        return loader
+
+    train_loader = _get_loader(train_dataset)
+    val_loader = _get_loader(val_dataset)
 
     # get logger ready
     log_dir = log_dir / save_prefix
