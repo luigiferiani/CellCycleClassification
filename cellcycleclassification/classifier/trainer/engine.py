@@ -121,7 +121,7 @@ def train_model(
     def _get_loader(dtst):
         if is_use_sampler:
             sampler = WeightedRandomSampler(
-                dtst.samples_weights, len(dtst)*4, replacement=True)
+                dtst.samples_weights, len(dtst), replacement=True)
             loader = DataLoader(
                 dtst,
                 sampler=sampler,
