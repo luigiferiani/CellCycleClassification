@@ -585,7 +585,7 @@ SESSIONS = dict(
         num_workers=4,
         scheduler=None,
         is_use_sampler=True,  # from here, the sampler returns the right length dataset
-        ),  # done
+        ),
     v_05_01b=dict(
         model_name='cnn_tierpsy_roi48_multi',
         batch_size=64,
@@ -594,7 +594,7 @@ SESSIONS = dict(
         num_workers=4,
         scheduler=None,
         is_use_sampler=True,
-        ),  # done
+        ),
     v_05_06b=dict(
         model_name='cnn_tierpsy_roi48_multi',
         batch_size=64,
@@ -603,7 +603,7 @@ SESSIONS = dict(
         num_workers=4,
         scheduler=None,
         is_use_sampler=True,
-       ),  # done
+       ),
     v_05_50b=dict(
         model_name='cnn_tierpsy_roi48_multi',
         batch_size=64,
@@ -618,7 +618,7 @@ SESSIONS = dict(
             verbose=True
             ),
         is_use_sampler=True,
-        ),  # done
+        ),
     v_05_60b=dict(
         model_name='cnn_tierpsy_roi48_multi',
         batch_size=64,

@@ -12,9 +12,9 @@ from datetime import datetime
 from sklearn.metrics import classification_report
 
 import torch
-from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from torch.utils.data.sampler import WeightedRandomSampler
+
+from cellcycleclassification.classifier.models.helper import get_dataloader
 
 
 def train_one_epoch(
@@ -118,25 +118,10 @@ def train_model(
     save_prefix = f'{save_prefix}_{strnow}'
 
     # create dataloaders
-    def _get_loader(dtst):
-        if is_use_sampler:
-            sampler = WeightedRandomSampler(
-                dtst.samples_weights, len(dtst), replacement=True)
-            loader = DataLoader(
-                dtst,
-                sampler=sampler,
-                batch_size=batch_size,
-                num_workers=num_workers)
-        else:
-            loader = DataLoader(
-                dtst,
-                shuffle=True,
-                batch_size=batch_size,
-                num_workers=num_workers)
-        return loader
-
-    train_loader = _get_loader(train_dataset)
-    val_loader = _get_loader(val_dataset)
+    train_loader = get_dataloader(
+        train_dataset, is_use_sampler, batch_size, num_workers)
+    val_loader = get_dataloader(
+        val_dataset, is_use_sampler, batch_size, num_workers)
 
     # get logger ready
     log_dir = log_dir / save_prefix

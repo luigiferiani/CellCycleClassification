@@ -37,12 +37,13 @@ class CellsDataset(Dataset):
             self.frame_height = fid.get_node('/full_data').shape[1]
             self.frame_width = fid.get_node('/full_data').shape[2]
 
-        # any transform?
-        if which_set in ['train', 'val']:
-            self.transform = transforms.Compose([
+        self.default_transforms_list = [
                 transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomHorizontalFlip(p=0.5),
-                ])
+                ]
+        # any transform?
+        if which_set in ['train', 'val']:
+            self.transform = transforms.Compose(self.default_transforms_list)
         else:
             self.transform = transforms.Compose([])  # does nothing
 
@@ -116,6 +117,13 @@ class CellsDataset(Dataset):
         img /= img.std()
         return img
 
+    def set_use_transforms(self, is_use_transforms):
+        if is_use_transforms:
+            self.transform = transforms.Compose(self.default_transforms_list)
+        else:
+            self.transform = transforms.Compose([])  # does nothing
+        return
+
 
 class CellsDatasetMultiClass(Dataset):
 
@@ -150,12 +158,13 @@ class CellsDatasetMultiClass(Dataset):
         # this is now an array with higher values for worse-represented classes
 
         # any transform?
-        if is_use_default_transforms and which_set in ['train', 'val']:
-            self.transform = transforms.Compose([
+        self.default_transforms_list = [
                 transforms.RandomVerticalFlip(p=0.5),
                 transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomErasing(),
-                ])
+                ]
+        if is_use_default_transforms and which_set in ['train', 'val']:
+            self.transform = transforms.Compose(self.default_transforms_list)
         else:
             self.transform = transforms.Compose([])  # does nothing
 
@@ -229,6 +238,15 @@ class CellsDatasetMultiClass(Dataset):
         img -= img.mean()
         img /= img.std()
         return img
+
+    def set_use_transforms(self, is_use_transforms):
+        if is_use_transforms:
+            self.transform = transforms.Compose(self.default_transforms_list)
+        else:
+            self.transform = transforms.Compose([])  # does nothing
+        return
+
+
 
 
 
