@@ -7,11 +7,26 @@ Created on Fri Aug 28 18:56:06 2020
 """
 import re
 import numpy as np
+import pandas as pd
+import warnings
+from tqdm import tqdm
+from multiprocessing import Pool
 
+from functools import partial
+
+from pprint import pprint, pformat
 from pathlib import Path
 from collections import defaultdict
 from matplotlib import pyplot as plt
-from sklearn.metrics import classification_report, confusion_matrix
+from mpl_toolkits.axes_grid1 import ImageGrid
+import matplotlib.patches as patches
+from matplotlib.widgets import TextBox
+import matplotlib.gridspec as gridspec
+
+
+from sklearn.metrics import (
+    classification_report, confusion_matrix, ConfusionMatrixDisplay)
+from tensorboard.backend.event_processing import event_accumulator
 
 import torch
 import torchvision.utils
@@ -22,10 +37,12 @@ from cellcycleclassification.classifier.models.helper import (
     get_model_datasets_criterion)
 
 from cellcycleclassification.classifier.models.helper import get_dataloader
-from cellcycleclassification.classifier.trainer.engine import evaluate_one_epoch
+from cellcycleclassification.classifier.trainer.engine import (
+    evaluate_one_epoch)
+
 
 # %%
-def imshow(imgs, lbls, prdctns):
+def quickgrid(imgs, lbls, prdctns):
 
     pred_type = {
         (0, 0): 'True Neg',
@@ -33,10 +50,11 @@ def imshow(imgs, lbls, prdctns):
         (0, 1): 'False Pos',
         (1, 0): 'False Neg',
         }
+
     n_imgs = imgs.shape[0]
     grid_img = torchvision.utils.make_grid(
         imgs, padding=2, nrow=n_imgs,
-        scale_each=False).numpy()[0, :, :]
+        scale_each=True).numpy()[0, :, :]
 
     fig, ax = plt.subplots()
     ax.imshow(grid_img, cmap='gray')
@@ -51,6 +69,181 @@ def imshow(imgs, lbls, prdctns):
     ax.set_yticks([])
     fig.tight_layout()
     plt.show()
+
+
+def nicegrid(
+        imgs,
+        all_labels,  # all labels for dataset
+        all_predictions,  # all predicitons for dataset
+        isfirstinstage,  # bool True if first frame of a stage
+        epochs_trained,
+        training_parameters,
+        log_path):  # how many epochs did the model train for
+
+    # get a classification report
+    is_multi = 'multi' in training_parameters['model_name']
+    if is_multi:
+        class_id = [0, 1, 2, 3, 4]
+        class_labels = ['G0', 'G1', 'S', 'G2', 'M']
+    else:
+        class_id = [0, 1]
+        class_labels = ['not S', 'S']
+
+    crep_all = classification_report(
+        all_labels, all_predictions,
+        labels=class_id, target_names=class_labels, output_dict=True)
+    crep_first = classification_report(
+        all_labels[isfirstinstage], all_predictions[isfirstinstage],
+        labels=class_id, target_names=class_labels, output_dict=True)
+
+    # bin_pred_type = {  # second entry is prediction
+    #     (0, 0): {'str': 'not S', 'c': 'g'},
+    #     (1, 1): {'str': 'S', 'c': 'g'},
+    #     (0, 1): {'str': 'S', 'c': 'r'},
+    #     (1, 0): {'str': 'not S', 'c': 'r'},
+    #     }
+
+    # set up figure specs
+    fig = plt.figure(figsize=(8.3, 11.7))
+    gs = gridspec.GridSpec(
+        nrows=3, ncols=2, left=0.04, right=0.92, bottom=0.01, top=0.98)
+
+    # axis with text based info
+    tax = fig.add_subplot(gs[0, 0])
+    tax.set_visible(False)
+    tbox = tax.get_position()
+    # grect = [gbox.x0, gbox.y0, gbox.width, gbox.height]
+
+    was_scheduler = training_parameters['scheduler'] is not None
+    if was_scheduler:
+        if training_parameters['scheduler_kwargs']['mode'] == 'max':
+            scheduler_update_mode = 'max accuracy'
+        elif training_parameters['scheduler_kwargs']['mode'] == 'min':
+            scheduler_update_mode = 'min loss'
+        else:
+            upmode = training_parameters['scheduler_kwargs']['mode']
+            raise ValueError(
+                f'unknown sheduler update method {upmode}')
+    else:
+        scheduler_update_mode = None
+    crep_txt = (
+        f"All dataset:\n"
+        f"Accuracy: {crep_all['accuracy']:.3f}\n"
+        f"F1 score: {crep_all['S']['f1-score']:.3f}\n"
+        f"Precision: {crep_all['S']['precision']:.3f}\n"
+        f"Recall: {crep_all['S']['recall']:.3f}\n"
+        f"\nFirst in stage:\n"
+        f"Accuracy: {crep_first['accuracy']:.3f}\n"
+        f"F1 score: {crep_first['S']['f1-score']:.3f}\n"
+        f"Precision: {crep_first['S']['precision']:.3f}\n"
+        f"Recall: {crep_first['S']['recall']:.3f}\n"
+        f"\nModel name: {training_parameters['model_name']}\n"
+        f"Epochs trained: {epochs_trained}\n"
+        f"Batch size: {training_parameters['batch_size']}\n"
+        f"Learning rate: {training_parameters['learning_rate']}\n"
+        f"Used scheduler: {was_scheduler}\n"
+        f"Scheduler update mode: {scheduler_update_mode}\n"
+        f"Used sampler: {training_parameters['is_use_sampler']}\n"
+        )
+
+    fig.text(
+        tbox.x0,
+        tbox.y0 + tbox.height,
+        crep_txt,
+        verticalalignment='top',
+        fontname='monospace',
+        fontsize=12,
+        wrap=True)
+
+    # here goes the confusion matrix
+    cmax = fig.add_subplot(gs[0, 1])
+    cm = confusion_matrix(all_labels, all_predictions)
+    cmdisp = ConfusionMatrixDisplay(
+        confusion_matrix=cm,
+        display_labels=class_labels)
+    cmdisp = cmdisp.plot(cmap='Blues', ax=cmax)
+
+    # plot logs
+
+    if log_path is not None:
+        log_df = read_tb_log(log_path)
+        lax = fig.add_subplot(gs[1, :])
+        for metric in ['train_epoch_loss', 'val_epoch_loss']:
+            log_df.plot(y=metric, ax=lax)
+        lax.set_ylim(0, 1)
+
+    # examples grid
+    gax = fig.add_subplot(gs[2:, :])
+    gax.set_visible(False)
+    gbox = gax.get_position()
+    grect = [gbox.x0, gbox.y0, gbox.width, gbox.height]
+
+    # lets just use the "first in stage" as example
+    imgs_first = imgs[isfirstinstage]
+    labs_first = all_labels[isfirstinstage]
+    preds_first = all_predictions[isfirstinstage]
+    n_imgs = imgs_first.shape[0]
+    if n_imgs > 18:
+        n_imshows = 18
+    else:
+        n_imshows = n_imgs
+
+    # find factors.
+    factors = [i for i in range(1, n_imshows+1) if (n_imshows % i == 0)]
+    n_imgs_per_row = factors[len(factors)//2]
+    n_rows = n_imshows // n_imgs_per_row
+    # make grid image
+    grid = ImageGrid(
+        fig,
+        grect,
+        nrows_ncols=(n_rows, n_imgs_per_row), axes_pad=0.1)
+    for ax, im, ytrue, ypred in zip(
+            grid,
+            imgs_first[:n_imshows],
+            labs_first[:n_imshows],
+            preds_first[:n_imshows]):
+        edge_color = 'g' if (ytrue == ypred) else 'r'
+        # Iterating over the grid returns the Axes.
+        ax.imshow(im, cmap='gray')
+        ax.text(
+            0.05, 0.05, class_labels[ypred],
+            color='w',
+            fontweight='bold',
+            verticalalignment='top')
+        ax.set_xticks([])
+        ax.set_yticks([])
+        rect = patches.Rectangle(
+            (0, 0), im.shape[1], im.shape[0],
+            edgecolor=edge_color,
+            linewidth=2,
+            facecolor='none',
+            )
+        ax.add_patch(rect)
+
+    return fig
+
+
+def find_log(model_fname):
+    evs = list(model_fname.parent.rglob('events.out.tfevents*.*'))
+    if len(evs) == 0:
+        return None
+    elif len(evs) > 1:
+        warnings.warn('multiple logs found, returning the first')
+    return evs[0]
+
+
+def read_tb_log(log_path):
+    ea = event_accumulator.EventAccumulator(
+        str(log_path), size_guidance={event_accumulator.SCALARS: 0})
+    ea.Reload()
+    df = []
+    for metric in ea.Tags()['scalars']:
+        _df = pd.DataFrame(ea.Scalars(metric))[['step', 'value']].rename(
+            columns={'value': metric}).set_index('step')
+        df.append(_df)
+
+    df = pd.concat(df, axis=1)
+    return df
 
 
 def find_trained_models(dirname):
@@ -91,6 +284,7 @@ def evaluate_performance_one_trained_model(model_fname, dataset_fname):
         which_splits='val',
         data_path=dataset_fname)
     val_dataset.set_use_transforms(False)
+    val_dataset.is_return_firstinstage_info = True
     # create dataset/loader
     val_loader = get_dataloader(
         val_dataset,
@@ -104,38 +298,45 @@ def evaluate_performance_one_trained_model(model_fname, dataset_fname):
     model.load_state_dict(checkpoint['model_state_dict'])
     last_epoch = checkpoint['epoch']
     # evaluate a full epoch
-    with torch.no_grad():
-        model.eval()
-        val_loss = defaultdict(float)
-        labels = defaultdict(torch.tensor)
-        predictions = defaultdict(torch.tensor)
-        # for mbc, data in enumerate(pbar):
-        for mbc, data in enumerate(val_loader):
-            # get the inputs; data is a list of [inputs, labels]
-            batch_imgs, batch_labels = data[0].to(device), data[1].to(device)
-            # forwards only
-            out = model(batch_imgs)
-            _loss = criterion(out, batch_labels)
-            if out.ndim > 1:
-                batch_predictions = torch.argmax(out, axis=1)
-            else:
-                batch_predictions = (torch.sigmoid(out) > 0.5).long()
-            # store labels and predictions
-            labels[mbc] = batch_labels.cpu()
-            predictions[mbc] = batch_predictions.cpu()
-            # store mini batch loss in accumulator
-            val_loss[mbc] = _loss.item()
-    # average or concatenate batch values
-    val_loss = np.mean([val_loss[mbc] for mbc in val_loss.keys()])
-    predictions = np.concatenate(
-        [predictions[mbc].squeeze() for mbc in predictions.keys()])
-    labels = np.concatenate(
-        [labels[mbc].squeeze() for mbc in labels.keys()])
+    _, val_accuracy, predictions, labels, images, isfirstinstage = (
+        evaluate_one_epoch(
+            model_name,
+            model,
+            criterion,
+            val_loader,
+            device,
+            last_epoch,
+            logger=None,
+            is_return_images=True,
+            is_return_isfirstinstage=True)
+        )
 
     class_rep = classification_report(labels, predictions, output_dict=True)
+    foo = classification_report(
+        labels[isfirstinstage], predictions[isfirstinstage], output_dict=False)
+    print('report for first of stage:')
+    print(foo)
+
+    log_path = find_log(model_fname)
+
     val_accuracy = class_rep['accuracy']
-    imshow(batch_imgs, batch_labels, batch_predictions)
-    return class_rep
+    fig = nicegrid(
+        images,
+        labels,
+        predictions,
+        isfirstinstage,
+        last_epoch,
+        train_pars,
+        log_path)
+    savename = (
+        model_fname.parent.parent
+        / 'reports' / model_fname.with_suffix('.pdf').name
+        )
+    fig.savefig(savename)
+    plt.close(fig)
+
+    return (val_accuracy, model_fname, class_rep)
+
 
 
 # %%
@@ -146,23 +347,23 @@ if __name__ == '__main__':
     data_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
     dataset_fname = data_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
     model_dir = get_default_log_dir()
-    model_fname = model_dir / 'v_03_50_20200908_122535/v_03_50_best.pth'
 
-    evaluate_performance_one_trained_model(model_fname, dataset_fname)
+    model_fnames = list(find_trained_models(model_dir))
 
+    accs = []
+    plt.ioff()
+    for model_fname in tqdm(model_fnames):
+        out = evaluate_performance_one_trained_model(
+            model_fname, dataset_fname)
+        accs.append(out)
+    plt.ion()
+    # out = evaluate_performance_one_trained_model(
+    #     model_fnames[80], dataset_fname)
 
-
-
-
-
-
-
-
-
-
-
-    # measures
-
+# %%
+    # model_fname = model_dir / 'v_03_50_20200908_122535/v_03_50_best.pth'
+    # class_rep, labels, predictions = evaluate_performance_one_trained_model(
+    #         model_fname, dataset_fname)
 
 
 
