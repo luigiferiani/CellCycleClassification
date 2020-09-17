@@ -806,7 +806,7 @@ def train_fun(
 
     # retrieve session parameters from the above list
     # session_parameters = SESSIONS[session_name]
-    session_parameters = get_training_parameters[session_name]
+    session_parameters = get_training_parameters(session_name)
 
     # get paths
     dataset_path = sanitise_path(dataset_path, 'dataset')
