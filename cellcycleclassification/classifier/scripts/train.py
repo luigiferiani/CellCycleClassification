@@ -11,10 +11,9 @@ from pathlib import Path
 import torch
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
-from cellcycleclassification.classifier.utils import set_device, sanitise_path
+from cellcycleclassification.classifier.utils import (
+    set_device, sanitise_path, get_training_parameters)
 from cellcycleclassification.classifier.trainer.engine import train_model
-from cellcycleclassification.classifier.scripts.eval import(
-    get_training_parameters)
 from cellcycleclassification.classifier.models.helper import (
     get_model_datasets_criterion)
 

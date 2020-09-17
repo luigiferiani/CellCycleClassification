@@ -31,8 +31,8 @@ from tensorboard.backend.event_processing import event_accumulator
 import torch
 import torchvision.utils
 
-from cellcycleclassification.classifier.utils import get_default_log_dir
-from cellcycleclassification.classifier.scripts.train import SESSIONS
+from cellcycleclassification.classifier.utils import (
+    get_default_log_dir, get_training_parameters)
 from cellcycleclassification.classifier.models.helper import (
     get_model_datasets_criterion)
 
@@ -258,18 +258,6 @@ def model_path_to_name(model_path):
     model_name = model_path.stem
     training_session_name = re.sub(regex_endings, '', model_name)
     return model_name, training_session_name
-
-
-def get_training_parameters(session_name):
-    try:
-        pars_dict = SESSIONS[session_name]
-    except KeyError:
-        print(f'cannot find parameters for {session_name}')
-        return
-    # patch parameters that were added later
-    if 'is_use_sampler' not in pars_dict.keys():
-        pars_dict['is_use_sampler'] = False
-    return pars_dict
 
 
 def evaluate_performance_one_trained_model(model_fname, dataset_fname):

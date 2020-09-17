@@ -92,3 +92,16 @@ def sanitise_path(_input, _which):
         _input = Path(_input)
 
     return _input
+
+
+def get_training_parameters(session_name):
+    from cellcycleclassification.classifier.scripts.train import SESSIONS
+    try:
+        pars_dict = SESSIONS[session_name]
+    except KeyError:
+        print(f'cannot find parameters for {session_name}')
+        return
+    # patch parameters that were added later
+    if 'is_use_sampler' not in pars_dict.keys():
+        pars_dict['is_use_sampler'] = False
+    return pars_dict
