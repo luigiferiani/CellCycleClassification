@@ -9,6 +9,7 @@ Created on Fri Aug 28 12:37:29 2020
 import tqdm
 import numpy as np
 from datetime import datetime
+from collections import defaultdict
 from sklearn.metrics import classification_report
 
 import torch
@@ -51,19 +52,29 @@ def train_one_epoch(
 
 @torch.no_grad()
 def evaluate_one_epoch(
-        basename, model, criterion, data_loader, device, epoch, logger=None):
+        basename, model, criterion, data_loader, device, epoch, logger=None,
+        is_return_images=False, is_return_isfirstinstage=False):
     # evaluate after epoch
     model.eval()
     # header = f'{basename} Eval Epoch: [{epoch}]'
 
-    val_loss = 0.0
-    # pbar = tqdm.tqdm(data_loader, desc=header)
-    labels = []
-    predictions = []
+    val_loss = defaultdict(float)
+    labels = defaultdict(torch.tensor)
+    predictions = defaultdict(torch.tensor)
+    if is_return_images:
+        images = defaultdict(torch.tensor)
+    else:
+        images = None
+    if is_return_isfirstinstage:
+        isfirstinstage = defaultdict(torch.tensor)
+    else:
+        isfirstinstage = None
     # for mbc, data in enumerate(pbar):
     for mbc, data in enumerate(data_loader):
         # get the inputs; data is a list of [inputs, labels]
         batch_imgs, batch_labels = data[0].to(device), data[1].to(device)
+        if is_return_isfirstinstage:
+            batch_isfirstinstage = data[2]
         # forwards only
         out = model(batch_imgs)
         _loss = criterion(out, batch_labels)
@@ -72,16 +83,29 @@ def evaluate_one_epoch(
         else:
             batch_predictions = (torch.sigmoid(out) > 0.5).long()
         # store labels and predictions
-        labels.append(batch_labels.cpu())
-        predictions.append(batch_predictions.cpu())
+        labels[mbc] = batch_labels.cpu()
+        predictions[mbc] = batch_predictions.cpu()
+        if is_return_images:
+            images[mbc] = batch_imgs.cpu()
+        if is_return_isfirstinstage:
+            isfirstinstage[mbc] = batch_isfirstinstage
         # store mini batch loss in accumulator
-        val_loss += _loss.item()
+        val_loss[mbc] = _loss.item()
+
     # average
-    val_loss /= mbc
+    val_loss = np.mean([val_loss[mbc] for mbc in val_loss.keys()])
+
     # concatenate accumulators into np arrays for ease of use.
-    # force labels to int for reporting (some loss criteria need them float)
-    predictions = np.concatenate(predictions, axis=0).squeeze()
-    labels = np.concatenate(labels, axis=0).squeeze().astype(int)
+    def _numpify(od):
+        return np.concatenate([od[k].squeeze() for k in od.keys()], axis=0)
+
+    predictions = _numpify(predictions)
+    labels = _numpify(labels).astype(int)  # some loss criteria needed a float
+
+    if is_return_images:
+        images = _numpify(images)
+    if is_return_isfirstinstage:
+        isfirstinstage = _numpify(isfirstinstage)
     # measures
     class_rep = classification_report(labels, predictions, output_dict=True)
     val_accuracy = class_rep['accuracy']
@@ -94,7 +118,7 @@ def evaluate_one_epoch(
         logger.add_scalar('specificity', class_rep['0']['recall'], epoch)
         logger.add_scalar('f1-score', class_rep['1']['f1-score'], epoch)
 
-    return val_loss, val_accuracy, predictions, labels
+    return val_loss, val_accuracy, predictions, labels, images, isfirstinstage
 
 
 def train_model(
@@ -141,7 +165,7 @@ def train_model(
             epoch,
             logger,
         )
-        val_loss, val_accuracy, _, _ = evaluate_one_epoch(
+        val_loss, val_accuracy, _, _, _, _ = evaluate_one_epoch(
             save_prefix,
             model,
             criterion,
