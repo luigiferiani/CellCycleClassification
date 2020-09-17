@@ -13,6 +13,8 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 from cellcycleclassification.classifier.utils import set_device, sanitise_path
 from cellcycleclassification.classifier.trainer.engine import train_model
+from cellcycleclassification.classifier.scripts.eval import(
+    get_training_parameters)
 from cellcycleclassification.classifier.models.helper import (
     get_model_datasets_criterion)
 
@@ -804,7 +806,8 @@ def train_fun(
         ):
 
     # retrieve session parameters from the above list
-    session_parameters = SESSIONS[session_name]
+    # session_parameters = SESSIONS[session_name]
+    session_parameters = get_training_parameters[session_name]
 
     # get paths
     dataset_path = sanitise_path(dataset_path, 'dataset')
