@@ -643,7 +643,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_06_01=dict(
         model_name='cnn_tierpsy_roi48_original',
         batch_size=64,
@@ -651,7 +651,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_06_06=dict(
         model_name='cnn_tierpsy_roi48_original',
         batch_size=64,
@@ -659,7 +659,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_06_50=dict(
         model_name='cnn_tierpsy_roi48_original',
         batch_size=64,
@@ -673,7 +673,7 @@ SESSIONS = dict(
             patience=3,
             verbose=True
             ),
-        ),
+        ),  # done
     v_06_60=dict(
         model_name='cnn_tierpsy_roi48_original',
         batch_size=64,
@@ -687,7 +687,7 @@ SESSIONS = dict(
             patience=3,
             verbose=True
             ),
-        ),
+        ),  # done
     # slimmed down versions
     v_07_00=dict(
         model_name='cnn_tierpsy_roi48_original_v2',
@@ -696,7 +696,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_07_01=dict(
         model_name='cnn_tierpsy_roi48_original_v2',
         batch_size=64,
@@ -704,7 +704,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_07_06=dict(
         model_name='cnn_tierpsy_roi48_original_v2',
         batch_size=64,
@@ -712,7 +712,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_07_50=dict(
         model_name='cnn_tierpsy_roi48_original_v2',
         batch_size=64,
@@ -726,7 +726,7 @@ SESSIONS = dict(
             patience=3,
             verbose=True
             ),
-        ),
+        ),  # done
     v_07_60=dict(
         model_name='cnn_tierpsy_roi48_original_v2',
         batch_size=64,
@@ -740,7 +740,7 @@ SESSIONS = dict(
             patience=3,
             verbose=True
             ),
-        ),
+        ),  # done
     # slimmed down versions
     v_08_00=dict(
         model_name='cnn_tierpsy_roi48_original_v3',
@@ -749,7 +749,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_08_01=dict(
         model_name='cnn_tierpsy_roi48_original_v3',
         batch_size=64,
@@ -757,7 +757,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_08_06=dict(
         model_name='cnn_tierpsy_roi48_original_v3',
         batch_size=64,
@@ -765,7 +765,7 @@ SESSIONS = dict(
         n_epochs=200,
         num_workers=4,
         scheduler=None,
-        ),
+        ),  # done
     v_08_50=dict(
         model_name='cnn_tierpsy_roi48_original_v3',
         batch_size=64,
@@ -779,9 +779,115 @@ SESSIONS = dict(
             patience=3,
             verbose=True
             ),
-        ),
+        ),  # done
     v_08_60=dict(
         model_name='cnn_tierpsy_roi48_original_v3',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=ReduceLROnPlateau,
+        scheduler_kwargs=dict(
+            mode='max',
+            factor=0.5,
+            patience=3,
+            verbose=True
+            ),
+        ),  # done
+    # global avg pooling isntead of max pooling
+    v_09_00=dict(
+        model_name='cnn_tierpsy_roi48_original_v4',
+        batch_size=64,
+        learning_rate=1e-4,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_09_01=dict(
+        model_name='cnn_tierpsy_roi48_original_v4',
+        batch_size=64,
+        learning_rate=3e-4,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_09_06=dict(
+        model_name='cnn_tierpsy_roi48_original_v4',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_09_50=dict(
+        model_name='cnn_tierpsy_roi48_original_v4',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=ReduceLROnPlateau,
+        scheduler_kwargs=dict(
+            mode='min',
+            factor=0.5,
+            patience=3,
+            verbose=True
+            ),
+        ),
+    v_09_60=dict(
+        model_name='cnn_tierpsy_roi48_original_v4',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=ReduceLROnPlateau,
+        scheduler_kwargs=dict(
+            mode='max',
+            factor=0.5,
+            patience=3,
+            verbose=True
+            ),
+        ),
+    # deeper
+    v_10_00=dict(
+        model_name='cnn_tierpsy_roi48_original_v5',
+        batch_size=64,
+        learning_rate=1e-4,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_10_01=dict(
+        model_name='cnn_tierpsy_roi48_original_v5',
+        batch_size=64,
+        learning_rate=3e-4,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_10_06=dict(
+        model_name='cnn_tierpsy_roi48_original_v5',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=None,
+        ),
+    v_10_50=dict(
+        model_name='cnn_tierpsy_roi48_original_v5',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=200,
+        num_workers=4,
+        scheduler=ReduceLROnPlateau,
+        scheduler_kwargs=dict(
+            mode='min',
+            factor=0.5,
+            patience=3,
+            verbose=True
+            ),
+        ),
+    v_10_60=dict(
+        model_name='cnn_tierpsy_roi48_original_v5',
         batch_size=64,
         learning_rate=1e-3,
         n_epochs=200,

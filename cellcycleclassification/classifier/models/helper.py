@@ -26,6 +26,10 @@ AVAILABLE_MODELS = {
         cnn_tierpsy.CNN_tierpsy_roi48_original_v2(),
     'cnn_tierpsy_roi48_original_v3':
         cnn_tierpsy.CNN_tierpsy_roi48_original_v3(),
+    'cnn_tierpsy_roi48_original_v4':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_v4(),
+    'cnn_tierpsy_roi48_original_v5':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_v5(),
     }
 
 
@@ -48,6 +52,8 @@ def get_dataset(model_name, which_split, data_path):
             'cnn_tierpsy_roi48_original',
             'cnn_tierpsy_roi48_original_v2',
             'cnn_tierpsy_roi48_original_v3',
+            'cnn_tierpsy_roi48_original_v4',
+            'cnn_tierpsy_roi48_original_v5',
             ]:
         dataset = datasets.CellsDataset(
             data_path, which_set=which_split, roi_size=48,
@@ -78,6 +84,8 @@ def get_loss_criterion(model_name):
             'cnn_tierpsy_roi48_original',
             'cnn_tierpsy_roi48_original_v2',
             'cnn_tierpsy_roi48_original_v3',
+            'cnn_tierpsy_roi48_original_v4',
+            'cnn_tierpsy_roi48_original_v5',
             ]:
         criterion = torch.nn.BCEWithLogitsLoss()
     else:
