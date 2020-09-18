@@ -295,7 +295,6 @@ class CNN_tierpsy_roi48_original(nn.Module):
                 nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm2d(256),
                 nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2),
                 )
         # define fully connected layer:
         self.fc_layers_with_dropout = nn.Sequential(
@@ -358,7 +357,6 @@ class CNN_tierpsy_roi48_original_v2(nn.Module):
                 nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm2d(128),
                 nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2),
                 )
         # define fully connected layer:
         self.fc_layers_with_dropout = nn.Sequential(
@@ -422,7 +420,6 @@ class CNN_tierpsy_roi48_original_v3(nn.Module):
                 nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm2d(64),
                 nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2),
                 )
         # define fully connected layer:
         self.fc_layers_with_dropout = nn.Sequential(
@@ -492,7 +489,6 @@ class CNN_tierpsy_roi48_original_v4(nn.Module):
                 nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm2d(256),
                 nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2),
                 )
         # define fully connected layer:
         self.fc_layers_with_dropout = nn.Sequential(
@@ -567,7 +563,6 @@ class CNN_tierpsy_roi48_original_v5(nn.Module):
                 nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
                 nn.BatchNorm2d(256),
                 nn.ReLU(),
-                nn.MaxPool2d(kernel_size=2, stride=2),
                 )
         # define fully connected layer:
         self.fc_layers_with_dropout = nn.Sequential(
