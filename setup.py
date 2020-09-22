@@ -10,4 +10,15 @@ setuptools.setup(
     license='MIT',
     packages=setuptools.find_packages(),
     zip_safe=False,
+    entry_points={
+        "console_scripts": [
+            "create_dataset="
+            + "cellcycleclassification.processing.create_annotations_dataset:"
+            + "main",
+            "annotate_dataset="
+            + "cellcycleclassification.manual_annotation_gui."
+            + "CellCycleAnnotator:"
+            + "main"
+        ]
+    },
     )
