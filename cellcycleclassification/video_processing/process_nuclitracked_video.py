@@ -19,7 +19,8 @@ import torch
 from cellcycleclassification.processing.create_annotations_dataset import (
     read_nuclitrack_data, get_ordered_imgs_list)
 from cellcycleclassification.classifier.scripts.eval import (
-    model_path_to_name, get_training_parameters)
+    model_path_to_name)
+from cellcycleclassification.classifier.utils import get_training_parameters
 from cellcycleclassification.classifier.models.helper import (
     get_model_datasets_criterion)
 
@@ -285,6 +286,74 @@ class VideoProcessor(object):
         return bgr_img
 
 
+# %%
+
+def get_model_children(model):
+    import torch.nn as nn
+    keep_list = [nn.Conv2d, nn.BatchNorm2d, nn.MaxPool2d, nn.ReLU]
+    # initialise
+    # model_weights = []
+    conv_layers = []
+    model_children = list(model.children())
+    # counter to keep count of the conv layers
+    counter = 0
+    # append all the conv layers and their respective weights to the list
+    for child in model_children:
+        if type(child) in keep_list:
+            counter += 1
+            # model_weights.append(child.weight)
+            conv_layers.append(child)
+        elif type(child) == nn.Sequential:
+            for gchild in child:
+                if type(gchild) in keep_list:
+                    counter += 1
+                    # model_weights.append(gchild.weight)
+                    conv_layers.append(gchild)
+    print(f"Total convolutional layers: {counter}")
+    # return model_weights, conv_layers
+    return conv_layers
+
+
+def through_unpacked_layers(img, conv_layers):
+    with torch.no_grad():
+        # pass the image through all the layers
+        results = [conv_layers[0](img)]
+        for i in range(1, len(conv_layers)):
+            # pass the result from the last layer to the next layer
+            results.append(conv_layers[i](results[-1]).detach())
+        # make a copy of the `results`
+        outputs = results.copy()
+    return outputs
+
+
+def plot_featmaps(featmaps):
+    from torchvision.utils import make_grid
+    from matplotlib import pyplot as plt
+    for layer in featmaps:
+        # deal with useless minibatch
+        featslist = [im[None, :, :] for im in layer[0]]
+        # get how many plots per row
+        n_plots = len(featslist)
+        factors = [i for i in range(1, n_plots+1) if (n_plots % i == 0)]
+        n_imgs_per_row = n_plots // factors[len(factors)//2]
+        img_grid = make_grid(
+            featslist,
+            nrow=n_plots//n_imgs_per_row,
+            pad_value=np.nan,
+            padding=1,
+            ).detach().numpy()
+        img_grid = img_grid[0]
+        # import pdb
+        # pdb.set_trace()
+        plt.figure()
+        plt.imshow(img_grid, cmap='Blues')
+        plt.tight_layout()
+
+
+
+
+# %%
+
 
 if __name__ == "__main__":
     work_dir = Path('/Users/lferiani/work_repos/CellCycleClassification/data')
@@ -293,16 +362,30 @@ if __name__ == "__main__":
     model_path = Path(
         '/Volumes/behavgenom$/Luigi/Data/AlexisBarr_cell_cycle_classification/'
         'trained_models')
-    model_path /= 'v_04_60_20200908_160037/v_04_60_best.pth'
+    # model_path /= 'v_04_60_20200908_160037/v_04_60_best.pth'
+    model_path /= 'v_06_60_20200917_171135/v_06_60_best.pth'
 
     vidproc = VideoProcessor(
         tracking_csv=csv_fname,
         images_dir=imgs_dir,
-        model_fname='',
+        model_fname=model_path,
         )
 
-    vidproc.process_video()
-    vidproc.export_frames()
+    # vidproc.process_video()
+    # vidproc.export_frames()
+
+# %%
+    # model_weights, conv_layers = get_model_children(vidproc.model)
+    conv_layers = get_model_children(vidproc.model)
+    roi_data = vidproc.get_rois_of_track_id(5)
+    # img = torch.from_numpy(roi_data[87][None, :, :, :])
+    img = torch.from_numpy(roi_data[60][None, :, :, :])
+    featmaps = through_unpacked_layers(img, conv_layers)
+
+    from matplotlib import pyplot as plt
+    plt.close('all')
+    plot_featmaps(featmaps)
+
 
     # im = vidproc.frame[0]
 
