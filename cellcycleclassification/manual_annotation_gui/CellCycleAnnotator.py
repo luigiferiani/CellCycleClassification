@@ -13,12 +13,13 @@ import pandas as pd
 from functools import partial
 
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap, QImage, QPainter, QPen, QColor, qRgb
+from PyQt5.QtGui import QPainter, QPen, QColor
 from PyQt5.QtWidgets import (
     QApplication, QLabel, QPushButton, QComboBox, QHBoxLayout, QMessageBox,
     QCheckBox)
 
-from HDF5VideoPlayer import HDF5VideoPlayerGUI, LineEditDragDrop
+from cellcycleclassification.manual_annotation_gui.HDF5VideoPlayer import (
+    HDF5VideoPlayerGUI, LineEditDragDrop)
 
 INT_COLS = ['track_id', 'frame']
 
@@ -343,16 +344,28 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
 
         # get the data related to the first track to show.
         # should be the first unlabelled one
-        track_counter, frame_number = self.find_first_unlabelled_ROI()
+        # track_counter, frame_number = self.find_first_unlabelled_ROI()
+        # after user experience feedback:
+        # annotations are rather sparse, since only the first frame of a stage
+        # is being annotated. so it makes sense to go to the last annotation
+        # this assumes nothing left behind,
+        # but more user friendly for this style of annotations
+        track_counter, frame_number = self.find_last_labelled_ROI()
         # self.track_id = self.track_ids[track_counter]
+        self.updateImGroup(track_counter, at_frame=frame_number)
         self.ui.tracks_comboBox.setCurrentIndex(track_counter)
-        self.updateImGroup(track_counter, at_frame=frame_number) # to get it to the right frame
 
         return
 
     def find_first_unlabelled_ROI(self):
         idx = self.annotations_df['label_id'] == 0
         (tid, fn) = self.annotations_df[idx].iloc[0].name
+        tc = self.ui.tracks_comboBox.findText(str(tid))  # get track counter
+        return tc, fn
+
+    def find_last_labelled_ROI(self):
+        idx = self.annotations_df['label_id'] != 0
+        (tid, fn) = self.annotations_df[idx].iloc[-1].name
         tc = self.ui.tracks_comboBox.findText(str(tid))  # get track counter
         return tc, fn
 
@@ -388,9 +401,8 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
             # select first frame of this track
             self.frame_number = min_frame
         else:
-            # or the first un-labelled if resuming
+            # or the first un-labelled/last_labelled if resuming
             self.frame_number = at_frame
-
         self.ui.spinBox_frame.setValue(self.frame_number)
         self.updateImage()
         self.mainImage.zoomFitInView()
@@ -643,11 +655,16 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
         return
 
 
-if __name__ == '__main__':
+def main():
     app = QApplication(sys.argv)
-
     ui = CellCycleAnnotator()
     ui.show()
-
     sys.exit(app.exec_())
 
+
+if __name__ == '__main__':
+    main()
+    # app = QApplication(sys.argv)
+    # ui = CellCycleAnnotator()
+    # ui.show()
+    # sys.exit(app.exec_())
