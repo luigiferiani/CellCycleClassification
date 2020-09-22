@@ -7,7 +7,8 @@ from functools import partial
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import Qt
-from HDF5VideoPlayer_ui import Ui_HDF5VideoPlayer
+from cellcycleclassification.manual_annotation_gui.HDF5VideoPlayer_ui import (
+    Ui_HDF5VideoPlayer)
 
 def setChildrenFocusPolicy(obj, policy):
     # recursively change the focus policy of all the objects in the widgets
