@@ -4,7 +4,7 @@
 
 1. Install [anaconda](https://www.anaconda.com/products/individual)
 
-2. Using the terminal, clone the content of this repository
+2. Using the terminal, clone the content of this repository:
 ```bash
 mkdir ~/behavgenom_repos
 cd ~/behavgenom_repos
@@ -19,7 +19,7 @@ conda config --show-sources
 If `conda-forge` does not appear in the list of channels, add it with
 `conda config --add channels conda-forge`
 
-4. Install the software in a dedicated `conda` environment
+4. Install the software in a dedicated `conda` environment:
 ```bash
 conda create -n cellcycleclassification
 conda activate cellcycleclassification
@@ -27,7 +27,7 @@ conda install --file requirements.txt
 pip install -e .
 ```
 
-Tested on macOS
+Tested on macOS.
 
 ## Use
 
@@ -48,7 +48,7 @@ create_dataset --images_dir path/to/the/tiffs/folder --tracking_csv path/to/nucl
 ```
 The output dataset will be in the same folder as the NucliTrack `.csv`,
 and have a name that shares the root with NucliTrack's csv and ends in
-`_annotations.hdf5`
+`_annotations.hdf5`.
 
 ### Manual annotations
 
@@ -65,7 +65,7 @@ The dataset created at the previous step can now be opened either by using the
 The GUI supports resuming, so one can load a partially annotated dataset
 and the the last annotated ROI will be shown
 (to be precise, the last ROI in the dataset with an annotation,
-not the most recently annotated ROI)
+not the most recently annotated ROI).
 
 #### Using the GUI
 While the GUI can be used with a mouse, the most common functionalities can be accessed via [keyboard shortcuts](#keyboard-shortcuts), for ease and speed.
