@@ -365,8 +365,13 @@ class CellCycleAnnotator(HDF5VideoPlayerGUI):
 
     def find_last_labelled_ROI(self):
         idx = self.annotations_df['label_id'] != 0
-        (tid, fn) = self.annotations_df[idx].iloc[-1].name
-        tc = self.ui.tracks_comboBox.findText(str(tid))  # get track counter
+        if not idx.any():
+            # this is a new dataset
+            (tc, fn) = self.find_first_unlabelled_ROI()
+        else:
+            (tid, fn) = self.annotations_df[idx].iloc[-1].name
+            # track counter from track id:
+            tc = self.ui.tracks_comboBox.findText(str(tid))
         return tc, fn
 
     def updateImGroup(self, track_counter, at_frame=None):
