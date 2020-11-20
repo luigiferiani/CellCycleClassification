@@ -8,6 +8,8 @@ Created on Wed Aug 26 12:18:44 2020
 Annotations are only labelled in the first frame of each cell cycle stage
 For training, all ROIS need to be annotated at all frames
 
+DEPRECATED - USE MAKE_DATASET_FOR_DL INSTEAD
+
 """
 
 import numpy as np

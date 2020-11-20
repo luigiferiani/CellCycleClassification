@@ -258,6 +258,55 @@ class CellsDatasetMultiClass(CellsDatasetBase):
             self.label_info[self.LABELS_COL]].values
         # this is now an array with higher values for worse-represented classes
 
+
+class CellsDatasetMultiClassNew(CellsDatasetBase):
+
+    LABELS_COL = 'multiclass_label_id'
+    LABEL_MERGE_DICT = {
+        1: 0,
+        2: 0,
+        3: 1,
+        4: 2,
+        5: 3}
+    LABEL_DICT = {
+        0: 'G0/1',
+        1: 'S',
+        2: 'G2',
+        3: 'M'
+        }
+
+    def __init__(
+            self,
+            hdf5_filename,
+            which_set='train',
+            roi_size=80,
+            labels_dtype=torch.long,
+            is_use_default_transforms=True):
+
+        super().__init__(
+            hdf5_filename,
+            which_set=which_set,
+            roi_size=roi_size,
+            labels_dtype=labels_dtype,
+            is_use_default_transforms=is_use_default_transforms,
+            )
+
+        # get labels info
+        ann_df = pd.read_hdf(hdf5_filename, key='/'+self.set_name)
+        self.label_info = ann_df[self.INFO_COLS].copy()
+        # class label needs be 0:N-1 for loss fn
+        self.label_info[self.LABELS_COL] = self.label_info[
+            'curated_label_id'].map(self.LABEL_MERGE_DICT)
+
+        # look at classes imbalance
+        labels_counts = self.label_info[self.LABELS_COL].value_counts()
+        labels_weights = 1./labels_counts
+        self.samples_weights = labels_weights[
+            self.label_info[self.LABELS_COL]].values
+        # this is now an array with higher values for worse-represented classes
+
+
+
 # %%
 
 if __name__ == "__main__":
@@ -266,7 +315,9 @@ if __name__ == "__main__":
 
     # where are things?
     work_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-    dataset_fname = work_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
+    work_dir /= 'new_annotated_datasets'
+    # dataset_fname = work_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
+    dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
 
     # parameters
     use_cuda = torch.cuda.is_available()
