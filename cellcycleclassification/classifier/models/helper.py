@@ -31,7 +31,15 @@ AVAILABLE_MODELS = {
     'cnn_tierpsy_roi48_original_v5':
         cnn_tierpsy.CNN_tierpsy_roi48_original_v5(),
     'cnn_tierpsy_roi48_original_multi':
-        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass()
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass(),
+    'cnn_tierpsy_roi48_original_multi_v2':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v2(),
+    'cnn_tierpsy_roi48_original_multi_v3':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v3(),
+    'cnn_tierpsy_roi48_original_multi_v4':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v4(),
+    'cnn_tierpsy_roi48_original_multi_v5':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v5()
     }
 
 
@@ -66,7 +74,13 @@ def get_dataset(model_name, which_split, data_path):
             data_path, which_set=which_split, roi_size=48,
             labels_dtype=torch.long)
 
-    elif model_name == 'cnn_tierpsy_roi48_original_multi':
+    elif model_name in [
+            'cnn_tierpsy_roi48_original_multi',
+            'cnn_tierpsy_roi48_original_multi_v2',
+            'cnn_tierpsy_roi48_original_multi_v3',
+            'cnn_tierpsy_roi48_original_multi_v4',
+            'cnn_tierpsy_roi48_original_multi_v5',
+            ]:
         dataset = datasets.CellsDatasetMultiClassNew(
             data_path, which_set=which_split, roi_size=48,
             labels_dtype=torch.long)
@@ -84,6 +98,10 @@ def get_loss_criterion(model_name):
             'cnn_tierpsy_roi48_v3',
             'cnn_tierpsy_roi48_multi',
             'cnn_tierpsy_roi48_original_multi',
+            'cnn_tierpsy_roi48_original_multi_v2',
+            'cnn_tierpsy_roi48_original_multi_v3',
+            'cnn_tierpsy_roi48_original_multi_v4',
+            'cnn_tierpsy_roi48_original_multi_v5',
             ]:
         criterion = torch.nn.CrossEntropyLoss()
     elif model_name in [

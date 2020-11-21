@@ -710,3 +710,218 @@ class CNN_tierpsy_roi48_original_multiclass(nn.Module):
         x = x.view(x.shape[0], -1)
         x = self.fc_layers_with_dropout(x)  # fully connected layers
         return x
+
+
+class CNN_tierpsy_roi48_original_multiclass_v2(
+        CNN_tierpsy_roi48_original_multiclass):
+    """
+    Original Tierpsy network,
+    remove one conv-conv-maxpool layer,
+    halve fc nodes
+
+    Inherits self.forward and self.globalmaxpooling2d
+    from CNN_tierpsy_roi48_original_multiclass
+    """
+    roi_size = 48
+
+    # Class : 1: S phase, 0: non S phase
+    def __init__(self):
+        super().__init__()
+        self.conv_layers = nn.Sequential(
+                # conv 0
+                nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),  # activation layer
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv 1
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv2
+                nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                )
+        # define fully connected layer:
+        self.fc_layers_with_dropout = nn.Sequential(
+            nn.Linear(128, 256),
+            nn.Dropout(p=0.5),
+            nn.Linear(256, 32),
+            nn.Dropout(p=0.5),
+            nn.Linear(32, 4),
+            )
+
+
+class CNN_tierpsy_roi48_original_multiclass_v3(
+        CNN_tierpsy_roi48_original_multiclass):
+    """
+    Original Tierpsy network,
+    remove one conv-conv-maxpool layer,
+    halve channels in all conv layers
+    fc nodes are 1/4 of original
+    """
+    roi_size = 48
+
+    def __init__(self):
+        super().__init__()
+        self.conv_layers = nn.Sequential(
+                # conv 0
+                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),  # activation layer
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv 1
+                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(32),
+                nn.ReLU(),
+                nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(32),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv2
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                )
+        # define fully connected layer:
+        self.fc_layers_with_dropout = nn.Sequential(
+            nn.Linear(64, 128),
+            nn.Dropout(p=0.5),
+            nn.Linear(128, 16),
+            nn.Dropout(p=0.5),
+            nn.Linear(16, 4),
+            )
+
+
+class CNN_tierpsy_roi48_original_multiclass_v4(nn.Module):
+    """
+    Original Tierpsy network,
+    but change global max pooling with global avg pooling
+    so needs to inherit from module, not another tierpsy cnn
+    """
+    roi_size = 48
+
+    # Class : 1: S phase, 0: non S phase
+    def __init__(self):
+        super().__init__()
+        self.conv_layers = nn.Sequential(
+                # conv 0
+                nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),  # activation layer
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv 1
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv2
+                nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv3
+                nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                )
+        # define fully connected layer:
+        self.fc_layers_with_dropout = nn.Sequential(
+            nn.Linear(256, 512),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, 64),
+            nn.Dropout(p=0.5),
+            nn.Linear(64, 4),
+            )
+
+    def global_avg_pooling2d(self, input_tensor):
+        # this was missing from the pytorch adaptation of avelino's cnn
+        # it's tensorflow's GlobalMaxPooling2D
+        # makes the network robust against roi size change,
+        # since it removes x,y dimensions
+        out = F.avg_pool2d(
+            input_tensor, kernel_size=input_tensor.size()[-2:])
+        return out
+
+    def forward(self, x):
+        x = self.conv_layers(x)  # pass input through conv layers
+        x = self.global_avg_pooling2d(x)  # maximum of each feature map
+        # flatten output for fully connected layer,
+        # end up being batch-by-channels, removes two dimensions at the end
+        # -1 do whatever it needs to be
+        x = x.view(x.shape[0], -1)
+        x = self.fc_layers_with_dropout(x)  # fully connected layers
+        x = x.squeeze()  # BCEwithlogitsloss wants same size as labels (1d)
+        return x
+
+
+class CNN_tierpsy_roi48_original_multiclass_v5(
+        CNN_tierpsy_roi48_original_multiclass):
+    """
+    From original Tierpsy network, add conv layers to conv2 and conv3 group
+    """
+    roi_size = 48
+
+    # Class : 1: S phase, 0: non S phase
+    def __init__(self):
+        super().__init__()
+        self.conv_layers = nn.Sequential(
+                # conv 0
+                nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),  # activation layer
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv 1
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv2
+                nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(128),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+                # conv3
+                nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                )
+        # define fully connected layer:
+        self.fc_layers_with_dropout = nn.Sequential(
+            nn.Linear(256, 512),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, 64),
+            nn.Dropout(p=0.5),
+            nn.Linear(64, 4),
+            )
+
