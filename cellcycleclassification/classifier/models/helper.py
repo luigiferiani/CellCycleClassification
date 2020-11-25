@@ -39,7 +39,11 @@ AVAILABLE_MODELS = {
     'cnn_tierpsy_roi48_original_multi_v4':
         cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v4(),
     'cnn_tierpsy_roi48_original_multi_v5':
-        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v5()
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v5(),
+    'cnn_tierpsy_roi48_original_multi_v6':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v6(),
+    'cnn_tierpsy_roi48_original_multi_v7':
+        cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v7(),
     }
 
 
@@ -80,6 +84,8 @@ def get_dataset(model_name, which_split, data_path):
             'cnn_tierpsy_roi48_original_multi_v3',
             'cnn_tierpsy_roi48_original_multi_v4',
             'cnn_tierpsy_roi48_original_multi_v5',
+            'cnn_tierpsy_roi48_original_multi_v6',
+            'cnn_tierpsy_roi48_original_multi_v7',
             ]:
         dataset = datasets.CellsDatasetMultiClassNew(
             data_path, which_set=which_split, roi_size=48,
@@ -102,6 +108,8 @@ def get_loss_criterion(model_name):
             'cnn_tierpsy_roi48_original_multi_v3',
             'cnn_tierpsy_roi48_original_multi_v4',
             'cnn_tierpsy_roi48_original_multi_v5',
+            'cnn_tierpsy_roi48_original_multi_v6',
+            'cnn_tierpsy_roi48_original_multi_v7',
             ]:
         criterion = torch.nn.CrossEntropyLoss()
     elif model_name in [
@@ -155,7 +163,8 @@ def get_model_datasets_criterion(model_name, which_splits=[], data_path=None):
     return model_instance, criterion, datasets
 
 
-def get_dataloader(dataset, is_use_sampler, batch_size, num_workers):
+def get_dataloader(
+        dataset, is_use_sampler, batch_size, num_workers, is_use_shuffle=True):
     if is_use_sampler:
         sampler = WeightedRandomSampler(
             dataset.samples_weights, len(dataset), replacement=True)
@@ -167,7 +176,7 @@ def get_dataloader(dataset, is_use_sampler, batch_size, num_workers):
     else:
         loader = DataLoader(
             dataset,
-            shuffle=True,
+            shuffle=is_use_shuffle,
             batch_size=batch_size,
             num_workers=num_workers)
     return loader

@@ -12,9 +12,9 @@ import warnings
 from tqdm import tqdm
 from multiprocessing import Pool
 
-from functools import partial
+# from functools import partial
 
-from pprint import pprint, pformat
+# from pprint import pprint, pformat
 from pathlib import Path
 from collections import defaultdict
 from matplotlib import pyplot as plt
@@ -83,8 +83,10 @@ def nicegrid(
     # get a classification report
     is_multi = 'multi' in training_parameters['model_name']
     if is_multi:
-        class_id = [0, 1, 2, 3, 4]
-        class_labels = ['G0', 'G1', 'S', 'G2', 'M']
+        # class_id = [0, 1, 2, 3, 4]
+        # class_labels = ['G0', 'G1', 'S', 'G2', 'M']
+        class_id = [0, 1, 2, 3]
+        class_labels = ['G0/1', 'S', 'G2', 'M']
     else:
         class_id = [0, 1]
         class_labels = ['not S', 'S']
@@ -95,6 +97,8 @@ def nicegrid(
     crep_first = classification_report(
         all_labels[isfirstinstage], all_predictions[isfirstinstage],
         labels=class_id, target_names=class_labels, output_dict=True)
+    # import pdb
+    # pdb.set_trace()
 
     # bin_pred_type = {  # second entry is prediction
     #     (0, 0): {'str': 'not S', 'c': 'g'},
@@ -260,8 +264,9 @@ def model_path_to_name(model_path):
     return model_name, training_session_name
 
 
-def evaluate_performance_one_trained_model(model_fname, dataset_fname):
-    """Run evaluation of an epoch of trained model. Create report"""
+def evaluate_performance_one_trained_model(
+        model_fname, dataset_fname, is_evaluate_xvalset=False):
+    """Run evaluation of an epoch of trained model."""
     # first get name and training session of model
     model_name, training_session_name = model_path_to_name(model_fname)
     # get the training parameters
@@ -272,21 +277,34 @@ def evaluate_performance_one_trained_model(model_fname, dataset_fname):
         which_splits='val',
         data_path=dataset_fname)
     val_dataset.set_use_transforms(False)
-    val_dataset.is_return_firstinstage_info = True
+    val_dataset.is_return_extra_info = True
     # create dataset/loader
-    val_loader = get_dataloader(
-        val_dataset,
-        train_pars['is_use_sampler'],
-        train_pars['batch_size'],
-        train_pars['num_workers']
-        )
+    if is_evaluate_xvalset:
+        # no oversampling, no shuffling
+        val_loader = get_dataloader(
+            val_dataset,
+            False,
+            train_pars['batch_size'],
+            train_pars['num_workers'],
+            is_use_shuffle=False,
+            )
+    else:
+        # this is the same loader of the training
+        val_loader = get_dataloader(
+            val_dataset,
+            train_pars['is_use_sampler'],
+            train_pars['batch_size'],
+            train_pars['num_workers'],
+            )
+    # import pdb
+    # pdb.set_trace()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # load model
     checkpoint = torch.load(model_fname, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
     last_epoch = checkpoint['epoch']
     # evaluate a full epoch
-    _, val_accuracy, predictions, labels, images, isfirstinstage = (
+    _, _, preds, labels, imgs, isfirstinstage, track_id, frame_number = (
         evaluate_one_epoch(
             model_name,
             model,
@@ -295,9 +313,26 @@ def evaluate_performance_one_trained_model(model_fname, dataset_fname):
             device,
             last_epoch,
             logger=None,
-            is_return_images=True,
-            is_return_isfirstinstage=True)
+            is_return_extra_info=True,
+            )
         )
+    return (
+        preds, labels, imgs, isfirstinstage, track_id, frame_number,
+        checkpoint, train_pars
+        )
+
+
+def evaluate_and_report_performance_one_trained_model(
+        model_fname, dataset_fname):
+    """Run evaluation of an epoch of trained model. Create report"""
+
+    # evaluate first
+    all_eval_out = (
+        evaluate_performance_one_trained_model(model_fname, dataset_fname)
+        )
+    predictions, labels, images, isfirstinstage, track_id, frame_number = (
+        all_eval_out[:6])
+    checkpoint, train_pars = all_eval_out[-2:]
 
     class_rep = classification_report(labels, predictions, output_dict=True)
     foo = classification_report(
@@ -308,12 +343,14 @@ def evaluate_performance_one_trained_model(model_fname, dataset_fname):
     log_path = find_log(model_fname)
 
     val_accuracy = class_rep['accuracy']
+    # import pdb
+    # pdb.set_trace()
     fig = nicegrid(
         images,
         labels,
         predictions,
         isfirstinstage,
-        last_epoch,
+        checkpoint['epoch'],  # last_epoch
         train_pars,
         log_path)
     savename = (
@@ -333,15 +370,20 @@ if __name__ == '__main__':
 
     # where are things
     data_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-    dataset_fname = data_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
+    # dataset_fname = data_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
+    dataset_fname = (
+        data_dir
+        / 'new_annotated_datasets'
+        / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+        )
     model_dir = get_default_log_dir()
 
     model_fnames = list(find_trained_models(model_dir))
 
     accs = []
     plt.ioff()
-    for model_fname in tqdm(model_fnames):
-        out = evaluate_performance_one_trained_model(
+    for model_fname in tqdm(model_fnames[20:]):
+        out = evaluate_and_report_performance_one_trained_model(
             model_fname, dataset_fname)
         accs.append(out)
     plt.ion()
@@ -349,10 +391,12 @@ if __name__ == '__main__':
     #     model_fnames[80], dataset_fname)
 
 # %%
-    # model_fname = model_dir / 'v_03_50_20200908_122535/v_03_50_best.pth'
-    # class_rep, labels, predictions = evaluate_performance_one_trained_model(
-    #         model_fname, dataset_fname)
+    model_fname = model_dir / 'v_14_60_20201121_231930/v_14_60_20201121_231930.pth'
 
+    (
+     preds, labels, imgs, isfirstinstage, track_id, frame_number,
+     checkpoint, train_pars
+     ) = evaluate_performance_one_trained_model(model_fname, dataset_fname, is_evaluate_xvalset=True)
 
 
 

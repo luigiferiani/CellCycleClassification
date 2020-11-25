@@ -53,7 +53,7 @@ def train_one_epoch(
 @torch.no_grad()
 def evaluate_one_epoch(
         basename, model, criterion, data_loader, device, epoch, logger=None,
-        is_return_images=False, is_return_isfirstinstage=False):
+        is_return_extra_info=False):
     # evaluate after epoch
     model.eval()
     # header = f'{basename} Eval Epoch: [{epoch}]'
@@ -61,20 +61,26 @@ def evaluate_one_epoch(
     val_loss = defaultdict(float)
     labels = defaultdict(torch.tensor)
     predictions = defaultdict(torch.tensor)
-    if is_return_images:
+
+    if is_return_extra_info:
         images = defaultdict(torch.tensor)
+        isfirstinstage = defaultdict(torch.tensor)
+        track_id = defaultdict(torch.tensor)
+        frame_number = defaultdict(torch.tensor)
     else:
         images = None
-    if is_return_isfirstinstage:
-        isfirstinstage = defaultdict(torch.tensor)
-    else:
         isfirstinstage = None
+        track_id = None
+        frame_number = None
+
     # for mbc, data in enumerate(pbar):
     for mbc, data in enumerate(data_loader):
         # get the inputs; data is a list of [inputs, labels]
         batch_imgs, batch_labels = data[0].to(device), data[1].to(device)
-        if is_return_isfirstinstage:
+        if is_return_extra_info:
             batch_isfirstinstage = data[2]
+            batch_track_id = data[3]
+            batch_frame_number = data[4]
         # forwards only
         out = model(batch_imgs)
         _loss = criterion(out, batch_labels)
@@ -85,10 +91,12 @@ def evaluate_one_epoch(
         # store labels and predictions
         labels[mbc] = batch_labels.cpu()
         predictions[mbc] = batch_predictions.cpu()
-        if is_return_images:
+        if is_return_extra_info:
             images[mbc] = batch_imgs.cpu()
-        if is_return_isfirstinstage:
             isfirstinstage[mbc] = batch_isfirstinstage
+            track_id[mbc] = batch_track_id
+            frame_number[mbc] = batch_frame_number
+
         # store mini batch loss in accumulator
         val_loss[mbc] = _loss.item()
 
@@ -102,10 +110,11 @@ def evaluate_one_epoch(
     predictions = _numpify(predictions)
     labels = _numpify(labels).astype(int)  # some loss criteria needed a float
 
-    if is_return_images:
+    if is_return_extra_info:
         images = _numpify(images)
-    if is_return_isfirstinstage:
         isfirstinstage = _numpify(isfirstinstage)
+        track_id = _numpify(track_id)
+        frame_number = _numpify(frame_number)
     # measures
     class_rep = classification_report(labels, predictions, output_dict=True)
     val_accuracy = class_rep['accuracy']
@@ -118,7 +127,10 @@ def evaluate_one_epoch(
         logger.add_scalar('specificity', class_rep['0']['recall'], epoch)
         logger.add_scalar('f1-score', class_rep['1']['f1-score'], epoch)
 
-    return val_loss, val_accuracy, predictions, labels, images, isfirstinstage
+    return (
+        val_loss, val_accuracy,
+        predictions, labels,
+        images, isfirstinstage, track_id, frame_number)
 
 
 def train_model(
@@ -165,7 +177,7 @@ def train_model(
             epoch,
             logger,
         )
-        val_loss, val_accuracy, _, _, _, _ = evaluate_one_epoch(
+        val_loss, val_accuracy, _, _, _, _, _, _ = evaluate_one_epoch(
             save_prefix,
             model,
             criterion,

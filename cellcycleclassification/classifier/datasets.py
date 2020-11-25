@@ -24,6 +24,7 @@ class CellsDatasetBase(Dataset):
         'x_center',
         'y_center',
         'track_id',
+        'unique_track_id',
         'ind_in_annotations_df',
         'curated_label_id',
         'label_is_S_phase']
@@ -39,7 +40,7 @@ class CellsDatasetBase(Dataset):
         self.fname = hdf5_filename
         self.set_name = which_set + '_df'
         self.label_info = []
-        self._is_return_firstinstage_info = False
+        self._is_return_extra_info = False
         self._all_dfs = None
         # # get labels info
         # ann_df = pd.read_hdf(hdf5_filename, key='/'+self.set_name)
@@ -62,14 +63,14 @@ class CellsDatasetBase(Dataset):
             self.transform = transforms.Compose([])  # does nothing
 
     @property
-    def is_return_firstinstage_info(self):
-        return self._is_return_firstinstage_info
+    def is_return_extra_info(self):
+        return self._is_return_extra_info
 
-    @is_return_firstinstage_info.setter
-    def is_return_firstinstage_info(self, new_value):
+    @is_return_extra_info.setter
+    def is_return_extra_info(self, new_value):
         assert isinstance(new_value, bool)
         if (
-                (not self.is_return_firstinstage_info) and
+                (not self._is_return_extra_info) and
                 (new_value is True) and
                 (self._all_dfs is None)
                 ):
@@ -78,7 +79,7 @@ class CellsDatasetBase(Dataset):
                  for dfname in ['/train_df', '/val_df', '/test_df']],
                 axis=0,
                 ignore_index=True)
-        self._is_return_firstinstage_info = new_value
+        self._is_return_extra_info = new_value
 
     def __len__(self):
         return len(self.label_info)
@@ -106,11 +107,15 @@ class CellsDatasetBase(Dataset):
         labels = np.array(labels)
         labels = torch.from_numpy(labels).type(self.labels_dtype)
 
-        if self.is_return_firstinstage_info:
+        is_first_in_stage = None
+        track_id = None
+        frame_number = None
+        if self.is_return_extra_info:
             is_first_in_stage = self.is_first_frame_of_stage(label_info)
-            return img, labels, is_first_in_stage
+            track_id = label_info['unique_track_id']
+            frame_number = label_info['frame']
 
-        return img, labels
+        return img, labels, is_first_in_stage, track_id, frame_number
 
     # internal function to get a ROI's pixel data
     def _get_roi(self, info):
@@ -377,7 +382,7 @@ if __name__ == "__main__":
     axs[1].imshow(imgs[1].squeeze())
     # %%
     for data in [val_data, test_data]:
-        data.is_return_firstinstage_info = True
+        data.is_return_extra_info = True
         foo = [(label.item(), isfirst) for (_, label, isfirst) in data]
         bar = pd.DataFrame(foo, columns=['label_id', 'is_first'])
         print(bar.value_counts())
