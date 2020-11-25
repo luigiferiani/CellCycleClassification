@@ -1215,6 +1215,21 @@ SESSIONS = dict(
             ),
         is_use_sampler=True,
         ),
+    v_16_debug=dict(
+        model_name='cnn_tierpsy_roi48_original_multi_v6',
+        batch_size=64,
+        learning_rate=1e-3,
+        n_epochs=4,
+        num_workers=4,
+        scheduler=ReduceLROnPlateau,
+        scheduler_kwargs=dict(
+            mode='min',
+            factor=0.5,
+            patience=3,
+            verbose=True
+            ),
+        is_use_sampler=True,
+        ),
     v_16_60=dict(
         model_name='cnn_tierpsy_roi48_original_multi_v6',
         batch_size=64,

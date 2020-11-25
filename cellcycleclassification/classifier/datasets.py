@@ -115,7 +115,11 @@ class CellsDatasetBase(Dataset):
             track_id = label_info['unique_track_id']
             frame_number = label_info['frame']
 
-        return img, labels, is_first_in_stage, track_id, frame_number
+            return img, labels, is_first_in_stage, track_id, frame_number
+
+        else:
+            return img, labels
+
 
     # internal function to get a ROI's pixel data
     def _get_roi(self, info):
