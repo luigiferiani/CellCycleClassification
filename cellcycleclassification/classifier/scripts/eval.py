@@ -379,10 +379,11 @@ if __name__ == '__main__':
     model_dir = get_default_log_dir()
 
     model_fnames = list(find_trained_models(model_dir))
+    model_fnames = [mf for mf in model_fnames if 'v_17_' in str(mf)]
 
     accs = []
     plt.ioff()
-    for model_fname in tqdm(model_fnames[20:]):
+    for model_fname in tqdm(model_fnames):
         out = evaluate_and_report_performance_one_trained_model(
             model_fname, dataset_fname)
         accs.append(out)
@@ -391,12 +392,12 @@ if __name__ == '__main__':
     #     model_fnames[80], dataset_fname)
 
 # %%
-    model_fname = model_dir / 'v_14_60_20201121_231930/v_14_60_20201121_231930.pth'
+    # model_fname = model_dir / 'v_14_60_20201121_231930/v_14_60_20201121_231930.pth'
 
-    (
-     preds, labels, imgs, isfirstinstage, track_id, frame_number,
-     checkpoint, train_pars
-     ) = evaluate_performance_one_trained_model(model_fname, dataset_fname, is_evaluate_xvalset=True)
+    # (
+    #  preds, labels, imgs, isfirstinstage, track_id, frame_number,
+    #  checkpoint, train_pars
+    #  ) = evaluate_performance_one_trained_model(model_fname, dataset_fname, is_evaluate_xvalset=True)
 
 
 

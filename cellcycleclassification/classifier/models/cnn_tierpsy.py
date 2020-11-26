@@ -1062,3 +1062,83 @@ class CNN_tierpsy_roi48_original_multiclass_v7(nn.Module):
         x = x.view(x.shape[0], -1)
         x = self.fc_layers_with_dropout(x)  # fully connected layers
         return x
+
+
+class CNN_tierpsy_multiclass_v2(nn.Module):
+    """
+    Similar to CNN we use for tierpsy worm/non worm,
+    but use correct dropout and global_max_pool
+    using the global_max_pooling function though
+    """
+
+    # Class : 1: S phase, 0: non S phase
+    def __init__(self):
+        super().__init__()
+        self.conv_layers = nn.Sequential(
+                nn.Conv2d(1, 16, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),  # activation layer
+                nn.Conv2d(16, 32, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+
+                nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(64),
+                nn.ReLU(),
+                nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+
+                nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2),
+
+                nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+                nn.BatchNorm2d(256),
+                nn.ReLU(),
+                nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
+                nn.ReLU(),
+                nn.MaxPool2d(kernel_size=2, stride=2))  # activation layer
+
+        # define fully connected layer:
+        # self.fc_layers = nn.Sequential(nn.Linear(512*3*3, 5))
+        self.fc_layers_with_dropout = nn.Sequential(
+            nn.Dropout(p=0.5),
+            nn.Linear(512, 4),  # end with 4 classes
+            )
+
+    def global_max_pooling2d(self, input_tensor):
+        # this was missing from the pytorch adaptation of avelino's cnn
+        # it's tensorflow's GlobalMaxPooling2D
+        # makes the network robust against roi size change,
+        # since it removes x,y dimensions
+        out = F.max_pool2d(
+            input_tensor, kernel_size=input_tensor.size()[-2:])
+        return out
+
+    def forward(self, x):
+        x = self.conv_layers(x)  # pass input through conv layers
+        x = self.global_max_pooling2d(x)  # maximum of each feature map
+        # flatten output for fully connected layer, batchize,
+        x = x.view(x.shape[0], -1)
+        x = self.fc_layers_with_dropout(x)  # fully connected layer
+        # the loss function does not want pre-softmaxing
+        return x
+
+
+class CNN_tierpsy_multiclass_v3(CNN_tierpsy_multiclass_v2):
+    """
+    Same as v2 above, but more fc layers
+    """
+
+    # Class : 1: S phase, 0: non S phase
+    def __init__(self):
+        super().__init__()
+
+        # overwrite fully connected layer:
+        self.fc_layers_with_dropout = nn.Sequential(
+            nn.Linear(512, 512),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, 4),  # end with 4 classes
+            )

@@ -44,6 +44,10 @@ AVAILABLE_MODELS = {
         cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v6(),
     'cnn_tierpsy_roi48_original_multi_v7':
         cnn_tierpsy.CNN_tierpsy_roi48_original_multiclass_v7(),
+    'cnn_tierpsy_multi_v2':
+        cnn_tierpsy.CNN_tierpsy_multiclass_v2(),
+    'cnn_tierpsy_multi_v3':
+        cnn_tierpsy.CNN_tierpsy_multiclass_v3(),
     }
 
 
@@ -86,6 +90,8 @@ def get_dataset(model_name, which_split, data_path):
             'cnn_tierpsy_roi48_original_multi_v5',
             'cnn_tierpsy_roi48_original_multi_v6',
             'cnn_tierpsy_roi48_original_multi_v7',
+            'cnn_tierpsy_multi_v2',
+            'cnn_tierpsy_multi_v3',
             ]:
         dataset = datasets.CellsDatasetMultiClassNew(
             data_path, which_set=which_split, roi_size=48,
@@ -110,6 +116,8 @@ def get_loss_criterion(model_name):
             'cnn_tierpsy_roi48_original_multi_v5',
             'cnn_tierpsy_roi48_original_multi_v6',
             'cnn_tierpsy_roi48_original_multi_v7',
+            'cnn_tierpsy_multi_v2',
+            'cnn_tierpsy_multi_v3',
             ]:
         criterion = torch.nn.CrossEntropyLoss()
     elif model_name in [
@@ -127,7 +135,8 @@ def get_loss_criterion(model_name):
     return criterion
 
 
-def get_model_datasets_criterion(model_name, which_splits=[], data_path=None):
+def get_model_datasets_criterion(
+        model_name, which_splits=[], data_path=None, roi_size=None):
     """
     Look up the model name in a dict of available models.
     Match it to the appropriate data loader
@@ -150,15 +159,19 @@ def get_model_datasets_criterion(model_name, which_splits=[], data_path=None):
     # grab correct loss criterion
     criterion = get_loss_criterion(model_name)
 
-    # grab corect dataset
-    datasets = tuple(
-        get_dataset(model_name, split, data_path)
-        for split in which_splits)
+    # grab correct dataset
+    datasets = []
+    for split in which_splits:
+        dataset = get_dataset(model_name, split, data_path)
+        if roi_size:
+            dataset.roi_size = roi_size
+        datasets.append(dataset)
 
-    # if input for which_splits was a single split name,
-    # return a single dataset not in a tuple
+    # convert to tuple, or single element
     if len(datasets) == 1:
         datasets = datasets[0]
+    else:
+        datasets = tuple(ds for ds in datasets)
 
     return model_instance, criterion, datasets
 
