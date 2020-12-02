@@ -14,6 +14,7 @@ from sklearn.metrics import classification_report
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
+import torch.nn.functional as F
 
 from cellcycleclassification.classifier.models.helper import get_dataloader
 
@@ -61,6 +62,7 @@ def evaluate_one_epoch(
     val_loss = defaultdict(float)
     labels = defaultdict(torch.tensor)
     predictions = defaultdict(torch.tensor)
+    probas = defaultdict(torch.tensor)
 
     if is_return_extra_info:
         images = defaultdict(torch.tensor)
@@ -86,16 +88,20 @@ def evaluate_one_epoch(
         _loss = criterion(out, batch_labels)
         if out.ndim > 1:
             batch_predictions = torch.argmax(out, axis=1)
+            batch_probas = F.softmax(out, dim=1)
         else:
-            batch_predictions = (torch.sigmoid(out) > 0.5).long()
+            batch_probas = torch.sigmoid(out)
+            batch_predictions = (batch_probas > 0.5).long()
         # store labels and predictions
         labels[mbc] = batch_labels.cpu()
         predictions[mbc] = batch_predictions.cpu()
+
         if is_return_extra_info:
             images[mbc] = batch_imgs.cpu()
             isfirstinstage[mbc] = batch_isfirstinstage
             track_id[mbc] = batch_track_id
             frame_number[mbc] = batch_frame_number
+            probas[mbc] = batch_probas.cpu()
 
         # store mini batch loss in accumulator
         val_loss[mbc] = _loss.item()
@@ -115,6 +121,7 @@ def evaluate_one_epoch(
         isfirstinstage = _numpify(isfirstinstage)
         track_id = _numpify(track_id)
         frame_number = _numpify(frame_number)
+        probas = _numpify(probas)
     # measures
     class_rep = classification_report(labels, predictions, output_dict=True)
     val_accuracy = class_rep['accuracy']
@@ -130,7 +137,7 @@ def evaluate_one_epoch(
     return (
         val_loss, val_accuracy,
         predictions, labels,
-        images, isfirstinstage, track_id, frame_number)
+        images, isfirstinstage, track_id, frame_number, probas)
 
 
 def train_model(
@@ -177,7 +184,7 @@ def train_model(
             epoch,
             logger,
         )
-        val_loss, val_accuracy, _, _, _, _, _, _ = evaluate_one_epoch(
+        val_loss, val_accuracy, _, _, _, _, _, _, _ = evaluate_one_epoch(
             save_prefix,
             model,
             criterion,

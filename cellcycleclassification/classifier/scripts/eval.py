@@ -275,7 +275,8 @@ def evaluate_performance_one_trained_model(
     model, criterion, val_dataset = get_model_datasets_criterion(
         train_pars['model_name'],
         which_splits='val',
-        data_path=dataset_fname)
+        data_path=dataset_fname,
+        roi_size=train_pars['roi_size'])
     val_dataset.set_use_transforms(False)
     val_dataset.is_return_extra_info = True
     # create dataset/loader
@@ -304,7 +305,7 @@ def evaluate_performance_one_trained_model(
     model.load_state_dict(checkpoint['model_state_dict'])
     last_epoch = checkpoint['epoch']
     # evaluate a full epoch
-    _, _, preds, labels, imgs, isfirstinstage, track_id, frame_number = (
+    _, _, prds, lbls, imgs, isfirstinstage, track_id, frame_number, prbs = (
         evaluate_one_epoch(
             model_name,
             model,
@@ -316,15 +317,23 @@ def evaluate_performance_one_trained_model(
             is_return_extra_info=True,
             )
         )
+
     return (
-        preds, labels, imgs, isfirstinstage, track_id, frame_number,
+        prds, lbls, imgs, isfirstinstage, track_id, frame_number, prbs,
         checkpoint, train_pars
         )
 
 
 def evaluate_and_report_performance_one_trained_model(
-        model_fname, dataset_fname):
+        model_fname, dataset_fname, is_force_reeval=False):
     """Run evaluation of an epoch of trained model. Create report"""
+    # first check for existence
+    fig_savename = (
+        model_fname.parent.parent
+        / 'reports' / model_fname.with_suffix('.pdf').name
+        )
+    if fig_savename.exists() and not is_force_reeval:
+        return
 
     # evaluate first
     all_eval_out = (
@@ -353,11 +362,7 @@ def evaluate_and_report_performance_one_trained_model(
         checkpoint['epoch'],  # last_epoch
         train_pars,
         log_path)
-    savename = (
-        model_fname.parent.parent
-        / 'reports' / model_fname.with_suffix('.pdf').name
-        )
-    fig.savefig(savename)
+    fig.savefig(fig_savename)
     plt.close(fig)
 
     return (val_accuracy, model_fname, class_rep)
@@ -379,13 +384,12 @@ if __name__ == '__main__':
     model_dir = get_default_log_dir()
 
     model_fnames = list(find_trained_models(model_dir))
-    model_fnames = [mf for mf in model_fnames if 'v_17_' in str(mf)]
 
     accs = []
     plt.ioff()
     for model_fname in tqdm(model_fnames):
         out = evaluate_and_report_performance_one_trained_model(
-            model_fname, dataset_fname)
+            model_fname, dataset_fname, is_force_reeval=True)
         accs.append(out)
     plt.ion()
     # out = evaluate_performance_one_trained_model(

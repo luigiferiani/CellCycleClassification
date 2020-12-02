@@ -6,6 +6,7 @@ Created on Tue Nov 24 15:20:15 2020
 @author: lferiani
 """
 
+import torch
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
@@ -15,8 +16,12 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import (
     classification_report, confusion_matrix, ConfusionMatrixDisplay)
 
+from torchvision.utils import make_grid
+
 from cellcycleclassification.classifier.utils import get_default_log_dir
-from cellcycleclassification.classifier.scripts.eval import evaluate_performance_one_trained_model
+from cellcycleclassification.classifier.scripts.eval import (
+    evaluate_performance_one_trained_model, model_path_to_name)
+
 
 
 def detect_spikes(signal_s):
@@ -100,7 +105,7 @@ def xval_evaluation_wrapper(model_fname, dataset_fname):
     sorts the output into a dataframe
     """
     (
-     preds, labels, imgs, isfirstinstage, track_id, frame_number,
+     preds, labels, imgs, isfirstinstage, track_id, frame_number, probas,
      checkpoint, train_pars
      ) = evaluate_performance_one_trained_model(
          model_fname, dataset_fname, is_evaluate_xvalset=True)
@@ -113,48 +118,29 @@ def xval_evaluation_wrapper(model_fname, dataset_fname):
         'fis': isfirstinstage})
     work_df = work_df.sort_values(by=['track_id', 'frame'])
 
-    return work_df
+    return work_df, train_pars, probas, imgs
 
 
-def post_process(raw_df, is_plot=False):
+def post_process(raw_df, probs, is_plot=False):
     """
     Take a df with the result of predicting the xval set, and do postprocessing
     """
     processed_df = []
+
     for track_name, track_df in raw_df.groupby(by='track_id'):
+
         # index by frame
         track_df = track_df.reset_index().set_index('frame')
+        # raw forbidden moves (for stats later)
+        track_df['raw_forbidden'] = detect_dubious(track_df['ypred'])
         # despike
-        track_df['ypred_despiked'] = despike(track_df['ypred'])
+        track_df['ypred_post'] = despike(track_df['ypred'])
         # find things still wrong
-        track_df['pred_spike'] = detect_spikes(track_df['ypred_despiked'])
-        track_df['forbidden_diff'] = detect_dubious(track_df['ypred_despiked'])
+        track_df['post_spike'] = detect_spikes(track_df['ypred_post'])
+        track_df['post_forbidden'] = detect_dubious(track_df['ypred_post'])
 
         # put the old index on, for output
         processed_df.append(track_df.reset_index().set_index('index'))
-
-        # plots unless we fixed everything
-        if track_df['ypred_despiked'].equals(track_df['ytrue']):
-            continue
-        if is_plot:
-            fig, ax = plt.subplots()
-            track_df.plot(y='ytrue', marker='.', ax=ax)
-            track_df.plot(y='ypred', marker='.', ax=ax)
-            track_df.plot(y='ypred_despiked', marker='.', ax=ax)
-            track_df.query('pred_spike == True').plot(
-                y='ypred_despiked',
-                marker='o',
-                linestyle='none',
-                color='r',
-                markerfacecolor='none',
-                ax=ax)
-            track_df.query('forbidden_diff == True').plot(
-                y='ypred_despiked',
-                marker='x',
-                linestyle='none',
-                color='r',
-                ax=ax)
-            ax.set_title(track_name)
 
     # reassembled processed df
     processed_df = pd.concat(processed_df, axis=0, ignore_index=False)
@@ -162,18 +148,127 @@ def post_process(raw_df, is_plot=False):
     return processed_df
 
 
+def plot_post_processing(post_df, probs, imgs):
+
+    # dictionary for class names
+    if probs.shape[1] == 4:
+        label_dict = {0: 'G0/1', 1: 'S', 2: 'G2', 3: 'M'}
+
+    for track_name, track_df in post_df.groupby(by='track_id'):
+
+        # create a new index to make plotting easier (rename old for clarity)
+        track_df = track_df.reset_index().rename(
+            columns={'index': 'index_in_full_df'})
+        # select the right probabilities,and the right images
+        track_probs = probs[track_df['index_in_full_df'].values, :].T
+
+
+        # plots unless we fixed everything
+        if track_df['ypred_post'].equals(track_df['ytrue']):
+            continue
+
+        mislabelled_df = track_df.query('ypred_post != ytrue')
+        mislabelled_imgs = imgs[mislabelled_df['index_in_full_df'].values]
+
+
+        # make images into one-row grid
+        track_imgs_grid = make_grid(
+            torch.Tensor(mislabelled_imgs[:, None, ...]),
+            nrow=mislabelled_imgs.shape[0],
+            padding=2,
+            normalize=True,
+            pad_value=1).numpy().transpose(1, 2, 0)
+
+        fig, axs = plt.subplots(2, 1, figsize=(18, 6))
+        ax = axs[0]
+        # plot matrix of probabilities
+        ax.imshow(track_probs, aspect='auto', cmap='Blues_r')
+        ax.set_xticks(track_df.index)
+        ax.invert_yaxis()
+        # and add the line plots on top
+        track_df.plot(
+            y='ytrue',
+            color='tab:green',
+            marker='.',
+            markersize=12,
+            linewidth=4,
+            ax=ax)
+        track_df.plot(
+            y='ypred',
+            color='tab:orange',
+            marker='.',
+            markersize=12,
+            linewidth=3,
+            ax=ax)
+        track_df.plot(
+            y='ypred_post',
+            color='tab:purple',
+            marker='.',
+            markersize=12,
+            linewidth=2,
+            ax=ax)
+        track_df.query('post_spike == True').plot(
+            y='ypred_post',
+            color='r',
+            marker='o',
+            markersize=8,
+            linestyle='none',
+            markerfacecolor='none',
+            label='spike, post',
+            ax=ax)
+        track_df.query('post_forbidden == True').plot(
+            y='ypred_post',
+            marker='x',
+            markersize=8,
+            linestyle='none',
+            color='r',
+            label='forbidden, post',
+            ax=ax)
+        ax.set_title(track_name)
+        ax.set_xticklabels(track_df['frame'].astype(int), rotation=45)
+        ax.set_xlabel('frame')
+        ax.set_yticks(range(probs.shape[1]))
+        ax.set_yticklabels(label_dict[k] for k in ax.get_yticks())
+        ax.set_ylabel('stage')
+
+        ax = axs[1]
+        ax.imshow(track_imgs_grid)
+        ax.set_yticks([])
+        roi_size = mislabelled_imgs.shape[1] + 2  # account for padding
+        n_rois = mislabelled_imgs.shape[0]
+        _xticks = np.arange(
+            roi_size/2, (0.5 + n_rois) * roi_size, roi_size)
+        ax.set_xticks(_xticks)
+        ax.set_xticklabels(mislabelled_df['frame'].values.astype(int))
+
+        fig.tight_layout()
+        axs[0].legend(
+            ncol=5,
+            bbox_to_anchor=(1, 1),
+            bbox_transform=fig.transFigure)
+
+    return
+
+
 def get_classification_stats(
-        proc_df, truecol='ytrue', predcol='ypred', is_plot=False, ax=None):
+        proc_df, truecol='ytrue', predcol='ypred', filter_col=None,
+        is_plot=False, ax=None):
+    # get data
+    ground_truth = proc_df[truecol]
+    predictions = proc_df[predcol]
+    if filter_col:
+        idx_filter = proc_df[filter_col]
+        ground_truth = ground_truth[idx_filter]
+        predictions = predictions[idx_filter]
     # classification reports
     crep = classification_report(
-        proc_df[truecol], proc_df[predcol])
+        ground_truth, predictions, output_dict=True)
     # confusion matrices
     cm = confusion_matrix(
-        proc_df[truecol], proc_df[predcol])
-    # outputs
-    print(f'{truecol} vs {predcol}')
-    print(crep)
-    print(f'Mean per-class accuracy, {predcol} = {meanperclassaccuracy(cm)}')
+        ground_truth, predictions)
+    # mean per-class accuracy
+    mpca = meanperclassaccuracy(cm)
+
     # plots
     if is_plot:
         if ax is None:
@@ -181,7 +276,80 @@ def get_classification_stats(
         ConfusionMatrixDisplay(
             confusion_matrix=cm).plot(cmap='Blues', ax=ax)
 
-    return
+    return crep, mpca
+
+
+def are_predictions_perfect(df, truecol, predcol):
+    return df[truecol].equals(df[predcol])
+
+
+def percentage_perfect_predictions_tracks(df, truecol, predcol):
+    """
+    On each track, check if all the predictions match the ground truth.
+    Then return eprcentage of tracks in which it happens
+    """
+    pct_perfect_tracks = df.groupby('track_id')[[truecol, predcol]].apply(
+        are_predictions_perfect, truecol, predcol)
+    # pct_perfect_tracks is an array of bools,
+    # so percentage it's just its mean * 100
+    pct_perfect_tracks = pct_perfect_tracks.mean() * 100
+    return pct_perfect_tracks
+
+
+def assess_postproc(model_fname, dataset_fname, is_plot=False):
+    """
+    Evaluate one epoch without shuffle or sampling,
+    return dictionary with info to put in a file
+    """
+    # get further info, evaluate, post process, get other info
+    model_name, training_session_name = model_path_to_name(model_fname)
+    raw_df, train_pars, probas, imgs = xval_evaluation_wrapper(
+        model_fname, dataset_fname)
+    processed_df = post_process(raw_df, probas)
+    if is_plot:
+        plot_post_processing(processed_df, probas, imgs)
+    # import pdb
+    # pdb.set_trace()
+    # measure goodness
+    crep_raw, mpca_raw = get_classification_stats(
+        processed_df, truecol='ytrue', predcol='ypred', is_plot=is_plot)
+    pct_perfect_tracks_raw = percentage_perfect_predictions_tracks(
+        processed_df, truecol='ytrue', predcol='ypred')
+    pct_noforbidden_diffs_tracks_raw = (
+        ~processed_df.groupby('track_id')['raw_forbidden'].any()
+        ).mean() * 100
+    crep_post, mpca_post = get_classification_stats(
+        processed_df, truecol='ytrue', predcol='ypred_post', is_plot=is_plot)
+    pct_perfect_tracks_post = percentage_perfect_predictions_tracks(
+        processed_df, truecol='ytrue', predcol='ypred_post')
+    pct_noforbidden_diffs_tracks_post = (
+        ~processed_df.groupby('track_id')['post_forbidden'].any()
+        ).mean() * 100
+    # same for first in stage
+    crep_raw_fis, mpca_raw_fis = get_classification_stats(
+        processed_df, truecol='ytrue', predcol='ypred',
+        filter_col='fis')
+    crep_post_fis, mpca_post_fis = get_classification_stats(
+        processed_df, truecol='ytrue', predcol='ypred_post',
+        filter_col='fis')
+
+    out = {
+        'trained_model_name': model_name,
+        'training_session': training_session_name,
+        'model_type': train_pars['model_name'],
+        'mpca_raw_%': mpca_raw * 100,
+        'mpca_postprocessed_%': mpca_post * 100,
+        'mpca_raw_firstinstage_%': mpca_raw_fis * 100,
+        'mpca_postprocessedfirstinstage_%': mpca_post_fis * 100,
+        '%_tracks_w/o_forbidden_steps_raw': pct_noforbidden_diffs_tracks_raw,
+        '%_tracks_w/o_forbidden_steps_post': pct_noforbidden_diffs_tracks_post,
+        '%_perfectly_predicted_tracks_raw': pct_perfect_tracks_raw,
+        '%_perfectly_predicted_tracks_post': pct_perfect_tracks_post,
+        'roi_size': train_pars['roi_size'],
+        'is_use_sampler': train_pars['is_use_sampler'],
+        }
+
+    return out
 
 
 # %%
@@ -197,59 +365,31 @@ if __name__ == '__main__':
         )
     model_dir = get_default_log_dir()
 
-    # model_fname = model_dir / 'v_14_60_20201121_231930/v_14_60_20201121_231930.pth'
-    # model_fname = model_dir / 'v_14_51_20201121_232024/v_14_51_20201121_232024.pth'
-    # model_fname = model_dir / 'v_15_60_20201121_231921/v_15_60_20201121_231921.pth'
-    # model_fname = model_dir / 'v_13_50_20201121_231743/v_13_50_20201121_231743.pth'
-    # model_fname = model_dir / 'v_13_60_20201121_231808/v_13_60_20201121_231808.pth'
-    # model_fname = model_dir / 'v_11_50_20201120_194923/v_11_50_20201120_194923.pth'
+    # get list of files
+    model_fnames = list(model_dir.rglob('*.pth'))
+    model_fnames = [mf for mf in model_fnames if 'best' not in str(mf)]
 
-    model_fnames = [
-        'v_11_50_20201120_194923',
-        'v_12_50_20201121_231643',
-        'v_13_50_20201121_231743',
-        # 'v_14_50_20201121_231859',
-        # 'v_15_50_20201121_231910',
-        ]
+    is_debug = True
 
-    model_fnames = [
-        'v_11_60_20201120_195143',
-        'v_12_60_20201121_231706',
-        'v_13_60_20201121_231808',
-        'v_14_60_20201121_231930',
-        'v_15_60_20201121_231921',
-        ]
-
-    model_fnames = [model_dir / mf / (mf + '.pth') for mf in model_fnames]
-
-    # %% plot all tracks if any ypred != ytrue
     plt.close('all')
 
-    models_efforts_df = []
-    for model_fname in model_fnames:
-        raw_df = xval_evaluation_wrapper(model_fname, dataset_fname)
-        processed_df = post_process(raw_df, is_plot=False)
-        get_classification_stats(
-            processed_df, truecol='ytrue', predcol='ypred')
-        get_classification_stats(
-            processed_df, truecol='ytrue', predcol='ypred_despiked')
-        models_efforts_df.append(processed_df)
-    # %%
-    consensus_df = models_efforts_df[0].copy()
-    consensus_df = consensus_df.rename(
-        columns={'ypred_despiked': 'ypred_despiked_0'})
-    for cc, df in enumerate(models_efforts_df):
-        if cc == 0:
-            continue
-        consensus_df = pd.merge(
-            consensus_df, df['ypred_despiked'],
-            left_index=True, right_index=True)
-        consensus_df = consensus_df.rename(
-            columns={'ypred_despiked': f'ypred_despiked_{cc}'})
-    # create consensus
-    postproc_cols = [c for c in consensus_df.columns if c.startswith('ypred_')]
-    consensus_df['consensus'] = consensus_df[postproc_cols].mode(axis=1)[0]
+    if is_debug:
+        model_fnames = [mf for mf in model_fnames if 'v_12_50' in str(mf)]
+        out = assess_postproc(model_fnames[0], dataset_fname, is_plot=True)
+    else:
+        # no plot, just get numbers out
+        out = []
+        for model_fname in tqdm(model_fnames):
+            out.append(assess_postproc(model_fname, dataset_fname))
+        # and write to csv
+        pd.DataFrame(out).sort_values(by='training_session').to_csv(
+            model_dir / 'reports' / 'postprocessing_performance.csv',
+            float_format='%.3f')
 
-    get_classification_stats(
-        consensus_df, truecol='ytrue', predcol='consensus', is_plot=True)
+
+
+
+
+
+
 
