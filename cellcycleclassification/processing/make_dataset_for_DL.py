@@ -98,9 +98,11 @@ def curate_annotations_df(annotations_fname, video_id):
     clean_df = ann_df[~ann_df['track_id'].isin(bad_track_id)].copy()
     clean_df = clean_df[~clean_df['curated_label_id'].isin(BAD_LABELS)]
 
-    fig, axs = plt.subplots(1, 2, figsize=(12.8, 4.8))
-    plot_labels(ann_df, ax=axs[0])
-    plot_labels(clean_df, ax=axs[1])
+    # plot. but don't, if all tracks are different id
+    if clean_df['track_id'].nunique() < len(clean_df):
+        fig, axs = plt.subplots(1, 2, figsize=(12.8, 4.8))
+        plot_labels(ann_df, ax=axs[0])
+        plot_labels(clean_df, ax=axs[1])
 
     # create a binary label that we're gonna use for training
     clean_df['label_is_S_phase'] = clean_df['curated_label_id'] == 3
@@ -122,12 +124,14 @@ annotations_fnames = [
     'R5C5F1_PCNA_sel_annotations_done_luigi.hdf5',
     'R5C5F2_PCNA_sel_annotations.hdf5',
     'R5C5F3_PCNA_sel_annotations.hdf5',
+    'Mitotic_A549_nuclei.hdf5'
     ]
 # make absolute
 annotations_fnames = [work_dir / af for af in annotations_fnames]
 
 # output
-output_hdf5 = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+# output_hdf5 = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+output_hdf5 = work_dir / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
 
 # %% load data
 # ann_set_id is the same as video_id in curate_annotations_df:
@@ -137,6 +141,7 @@ clean_dfs = []
 for ann_set_id, annotations_fname in enumerate(annotations_fnames):
     this_clean_df = curate_annotations_df(annotations_fname, ann_set_id)
     clean_dfs.append(this_clean_df)
+
 big_clean_df = pd.concat(clean_dfs, axis=0, sort=False).reset_index(drop=True)
 
 # how many tracks do we have?

@@ -70,33 +70,33 @@ def despike(signal_s):
     return despiked.astype(signal_s.dtype)
 
 
-def meanperclassaccuracy(confusion_matrix):
+def meanperclassrecall(conf_mat):
     """
-    From the confusion matrix output by sklearn, measure the accuracy in each
+    From the confusion matrix output by sklearn, measure the recall in each
     class, and average across classes
 
     Parameters
     ----------
-    confusion_matrix : np.ndarray
+    conf_mat : np.ndarray
         in row i, see how many instances of label i were classified with
         label j (varies across columns)
 
     Returns
     -------
-    mean_perclass_accuracy: float.
+    mean_perclass_recall: float.
 
     """
 
     # sum across columns to just count how many images of each class
     # we tried to classify
-    class_support = confusion_matrix.sum(axis=1)
+    class_support = conf_mat.sum(axis=1)
     # nnumber of correctly classified is on the diagonal
-    correctly_classified = confusion_matrix.diagonal()
+    truly_belonging_to_class = conf_mat.diagonal()
     # divide "per class true positives" by total number
-    perclass_accuracy = correctly_classified / class_support
+    perclass_recall = truly_belonging_to_class / class_support
     # average across classes
-    mean_perclass_accuracy = perclass_accuracy.mean()
-    return mean_perclass_accuracy
+    mean_perclass_recall = perclass_recall.mean()
+    return mean_perclass_recall
 
 
 def xval_evaluation_wrapper(model_fname, dataset_fname):
@@ -267,7 +267,6 @@ def get_classification_stats(
     cm = confusion_matrix(
         ground_truth, predictions)
     # mean per-class accuracy
-    mpca = meanperclassaccuracy(cm)
 
     # plots
     if is_plot:
@@ -276,7 +275,7 @@ def get_classification_stats(
         ConfusionMatrixDisplay(
             confusion_matrix=cm).plot(cmap='Blues', ax=ax)
 
-    return crep, mpca
+    return crep
 
 
 def are_predictions_perfect(df, truecol, predcol):
@@ -311,14 +310,14 @@ def assess_postproc(model_fname, dataset_fname, is_plot=False):
     # import pdb
     # pdb.set_trace()
     # measure goodness
-    crep_raw, mpca_raw = get_classification_stats(
+    crep_raw = get_classification_stats(
         processed_df, truecol='ytrue', predcol='ypred', is_plot=is_plot)
     pct_perfect_tracks_raw = percentage_perfect_predictions_tracks(
         processed_df, truecol='ytrue', predcol='ypred')
     pct_noforbidden_diffs_tracks_raw = (
         ~processed_df.groupby('track_id')['raw_forbidden'].any()
         ).mean() * 100
-    crep_post, mpca_post = get_classification_stats(
+    crep_post = get_classification_stats(
         processed_df, truecol='ytrue', predcol='ypred_post', is_plot=is_plot)
     pct_perfect_tracks_post = percentage_perfect_predictions_tracks(
         processed_df, truecol='ytrue', predcol='ypred_post')
@@ -326,10 +325,10 @@ def assess_postproc(model_fname, dataset_fname, is_plot=False):
         ~processed_df.groupby('track_id')['post_forbidden'].any()
         ).mean() * 100
     # same for first in stage
-    crep_raw_fis, mpca_raw_fis = get_classification_stats(
+    crep_raw_fis = get_classification_stats(
         processed_df, truecol='ytrue', predcol='ypred',
         filter_col='fis')
-    crep_post_fis, mpca_post_fis = get_classification_stats(
+    crep_post_fis = get_classification_stats(
         processed_df, truecol='ytrue', predcol='ypred_post',
         filter_col='fis')
 
@@ -337,10 +336,38 @@ def assess_postproc(model_fname, dataset_fname, is_plot=False):
         'trained_model_name': model_name,
         'training_session': training_session_name,
         'model_type': train_pars['model_name'],
-        'mpca_raw_%': mpca_raw * 100,
-        'mpca_postprocessed_%': mpca_post * 100,
-        'mpca_raw_firstinstage_%': mpca_raw_fis * 100,
-        'mpca_postprocessedfirstinstage_%': mpca_post_fis * 100,
+        'mpc_recall_raw_%':
+            crep_raw['macro avg']['recall'] * 100,
+        'mpc_precision_raw_%':
+            crep_raw['macro avg']['precision'] * 100,
+        'mpc_f1_raw_%':
+            crep_raw['macro avg']['f1-score'] * 100,
+        'accuracy_raw_%':
+            crep_raw['accuracy'] * 100,
+        'mpc_recall_postprocessed_%':
+            crep_post['macro avg']['recall'] * 100,
+        'mpc_precision_postprocessed_%':
+            crep_post['macro avg']['precision'] * 100,
+        'mpc_f1_postprocessed_%':
+            crep_post['macro avg']['f1-score'] * 100,
+        'accuracy_postprocessed_%':
+            crep_post['accuracy'] * 100,
+        'mpc_recall_raw_firstinstage_%':
+            crep_raw_fis['macro avg']['recall'] * 100,
+        'mpc_precision_raw_firstinstage_%':
+            crep_raw_fis['macro avg']['precision'] * 100,
+        'mpc_f1_raw_firstinstage_%':
+            crep_raw_fis['macro avg']['f1-score'] * 100,
+        'accuracy_raw_firstinstage_%':
+            crep_raw_fis['accuracy'] * 100,
+        'mpc_recall_postprocessed_firstinstage_%':
+            crep_post_fis['macro avg']['recall'] * 100,
+        'mpc_precision_postprocessed_firstinstage_%':
+            crep_post_fis['macro avg']['precision'] * 100,
+        'mpc_f1_postprocessed_firstinstage_%':
+            crep_post_fis['macro avg']['f1-score'] * 100,
+        'accuracy_postprocessed_firstinstage_%':
+            crep_post_fis['accuracy'] * 100,
         '%_tracks_w/o_forbidden_steps_raw': pct_noforbidden_diffs_tracks_raw,
         '%_tracks_w/o_forbidden_steps_post': pct_noforbidden_diffs_tracks_post,
         '%_perfectly_predicted_tracks_raw': pct_perfect_tracks_raw,
@@ -349,7 +376,7 @@ def assess_postproc(model_fname, dataset_fname, is_plot=False):
         'is_use_sampler': train_pars['is_use_sampler'],
         }
 
-    return out
+    return out, processed_df
 
 
 # %%
@@ -361,7 +388,8 @@ if __name__ == '__main__':
     dataset_fname = (
         data_dir
         / 'new_annotated_datasets'
-        / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+        # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+        / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
         )
     model_dir = get_default_log_dir()
 
@@ -374,13 +402,16 @@ if __name__ == '__main__':
     plt.close('all')
 
     if is_debug:
-        model_fnames = [mf for mf in model_fnames if 'v_12_50' in str(mf)]
-        out = assess_postproc(model_fnames[0], dataset_fname, is_plot=True)
+        vn = 'v_12_50'
+        vn = 'v_19_53'
+        vn = 'v_15_53'
+        model_fnames = [mf for mf in model_fnames if vn in str(mf)]
+        out, proc_df = assess_postproc(model_fnames[0], dataset_fname, is_plot=True)
     else:
         # no plot, just get numbers out
         out = []
         for model_fname in tqdm(model_fnames):
-            out.append(assess_postproc(model_fname, dataset_fname))
+            out.append(assess_postproc(model_fname, dataset_fname)[0])
         # and write to csv
         pd.DataFrame(out).sort_values(by='training_session').to_csv(
             model_dir / 'reports' / 'postprocessing_performance.csv',

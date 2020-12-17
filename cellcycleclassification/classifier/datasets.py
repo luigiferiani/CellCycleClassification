@@ -326,7 +326,8 @@ if __name__ == "__main__":
     work_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
     work_dir /= 'new_annotated_datasets'
     # dataset_fname = work_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
-    dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+    # dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+    dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
 
     # parameters
     use_cuda = torch.cuda.is_available()
@@ -387,7 +388,7 @@ if __name__ == "__main__":
     # %%
     for data in [val_data, test_data]:
         data.is_return_extra_info = True
-        foo = [(label.item(), isfirst) for (_, label, isfirst) in data]
+        foo = [(label.item(), isfirst) for (_, label, isfirst, _, _) in data]
         bar = pd.DataFrame(foo, columns=['label_id', 'is_first'])
         print(bar.value_counts())
 

@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import warnings
 from tqdm import tqdm
-from multiprocessing import Pool
 
 # from functools import partial
 
@@ -368,7 +367,6 @@ def evaluate_and_report_performance_one_trained_model(
     return (val_accuracy, model_fname, class_rep)
 
 
-
 # %%
 
 if __name__ == '__main__':
@@ -379,11 +377,15 @@ if __name__ == '__main__':
     dataset_fname = (
         data_dir
         / 'new_annotated_datasets'
-        / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+        # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+        / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
         )
     model_dir = get_default_log_dir()
 
     model_fnames = list(find_trained_models(model_dir))
+
+    model_fnames = [mf for mf in model_fnames
+                    if '_53' in mf.stem or '_63' in mf.stem]
 
     accs = []
     plt.ioff()
