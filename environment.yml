@@ -1,0 +1,23 @@
+name: cellcycleclassification
+channels:
+  - defaults
+  - pytorch
+  - conda-forge
+dependencies:
+  - pyqt==5.9.2
+  - pytables==3.6.1
+  - numpy==1.19.1
+  - matplotlib
+  - fire
+  - python<3.7.4
+  - pathlib
+  - pip
+  - opencv
+  - pandas==1.1.1
+  - ipython==7.16.1
+  - scikit-learn
+  - torchvision==0.7.0
+  - pytorch==1.6.0
+  - tqdm
+  - tensorboard
+  - spyder-kernels>=1.10.0
