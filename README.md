@@ -21,15 +21,62 @@ If `conda-forge` does not appear in the list of channels, add it with
 
 4. Install the software in a dedicated `conda` environment:
 ```bash
-conda create -n cellcycleclassification
+conda env create --file environment.yml
 conda activate cellcycleclassification
-conda install --file requirements.txt
+pip install -e .
+```
+
+## Update an existing installation
+
+```bash
+cd ~/behavgenom_repos/CellCycleClassification
+git pull
+conda env activate cellcycleclassification
+conda env update -f environment.yml
 pip install -e .
 ```
 
 Tested on macOS.
 
 ## Use
+
+### Classify NucliTrack-processed videos
+
+#### To process a single file:
+``` bash
+conda activate cellcycleclassification
+classify /path/to/nuclitracked_data_sel.csv
+```
+
+In this example, the program assumes the existence of a folder named
+`/path/to/nuclitracked_data/` containing frames in tiff format.
+
+#### To process all files in a folder:
+``` bash
+conda activate cellcycleclassification
+classify /path/to/folder/with/nuclitracked/data
+```
+
+In this example, the program assumes the existence of csv files and folders
+with the following naming convention:
+```bash
+/path/to/folder/with/nuclitracked/data/a_video_sel.csv        # NT csv
+/path/to/folder/with/nuclitracked/data/a_video/               # frames folder
+/path/to/folder/with/nuclitracked/data/another_video_sel.csv  # NT csv
+/path/to/folder/with/nuclitracked/data/another_video/         # frames folder
+/path/to/folder/with/nuclitracked/data/a_third_video_sel.csv  # NT csv
+/path/to/folder/with/nuclitracked/data/a_third_video/         # frames folder
+```
+
+#### Output files
+The results of the classification are exported to a csv file with name obtained
+substituting `_sel.csv` with `_sel_classified.csv`.
+E.g. `classify /path/to/folder/with/nuclitracked/data/a_video_sel.csv` will
+output `/path/to/folder/with/nuclitracked/data/a_video_sel_classified.csv`
+
+It is possible to export a series of annotated images by using the classify
+command with the flag `--export_frames=True`.
+
 
 ### Create dataset for manual annotations
 
