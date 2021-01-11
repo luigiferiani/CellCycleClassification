@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name='cellcycleclassification',
-    version='0.0.1',
+    version='0.0.2',
     description='Tools to classify at what stage of the cell cycle cells are',
     url='https://github.com/luigiferiani/CellCycleClassification',
     author='Luigi Feriani',
@@ -18,6 +18,10 @@ setuptools.setup(
             "annotate_dataset="
             + "cellcycleclassification.manual_annotation_gui."
             + "CellCycleAnnotator:"
+            + "main",
+            "classify="
+            + "cellcycleclassification.video_processing."
+            + "process_nuclitracked_videos:"
             + "main"
         ]
     },

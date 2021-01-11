@@ -5,6 +5,7 @@ Created on Fri Aug 28 18:56:06 2020
 
 @author: lferiani
 """
+# %%
 import re
 import numpy as np
 import pandas as pd
@@ -381,17 +382,18 @@ if __name__ == '__main__':
         / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
         )
     model_dir = get_default_log_dir()
+    (model_dir / 'reports').mkdir(exist_ok=True, parents=True)
 
     model_fnames = list(find_trained_models(model_dir))
 
-    model_fnames = [mf for mf in model_fnames
-                    if '_53' in mf.stem or '_63' in mf.stem]
+    # model_fnames = [mf for mf in model_fnames
+    #                 if '_53' in mf.stem or '_63' in mf.stem]
 
     accs = []
     plt.ioff()
     for model_fname in tqdm(model_fnames):
         out = evaluate_and_report_performance_one_trained_model(
-            model_fname, dataset_fname, is_force_reeval=True)
+            model_fname, dataset_fname, is_force_reeval=False)
         accs.append(out)
     plt.ion()
     # out = evaluate_performance_one_trained_model(
