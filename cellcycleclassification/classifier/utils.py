@@ -38,13 +38,12 @@ def get_default_data_path():
 
 def get_default_log_dir():
     platname = platform.system()
+
     bg_mac = Path('/Volumes/behavgenom$/')
     bg_linux = Path.home() / 'net/behavgenom$/'
 
     log_on_bg = Path(
         'Luigi/Data/AlexisBarr_cell_cycle_classification/trained_models')
-
-    local_logdir = Path.home() / 'trained_models'
 
     if platname == 'Darwin':
         logdir = bg_mac / log_on_bg
@@ -54,6 +53,9 @@ def get_default_log_dir():
         raise Exception('not coded for windows yet')
 
     if not logdir.exists():
+        from cellcycleclassification import base_path
+        local_logdir = base_path / 'trained_models'
+
         logdir = local_logdir
         warnings.warn(
             f'remote logdir not found, logging instead in {logdir}'
