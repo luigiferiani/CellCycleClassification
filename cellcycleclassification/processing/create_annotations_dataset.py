@@ -35,7 +35,8 @@ def read_nuclitrack_data(csv_fname):
                             .str.lower()
                             .str.replace(' ', '_'))
     for col in INT_COLS:
-        raw_df[col] = raw_df[col].astype(int)
+        if col in raw_df:
+            raw_df[col] = raw_df[col].astype(int)
 
     # tracks can be lost for a few frames. Try interpolating the missing frames
 
