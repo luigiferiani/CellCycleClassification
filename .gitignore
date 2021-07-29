@@ -109,3 +109,6 @@ data/
 # MacOS rubbish
 **/.DS_Store
 .*out
+
+# vscode
+.vscode/
