@@ -160,7 +160,7 @@ for ann_set_id, annotations_fname in enumerate(annotations_fnames):
     with tables.File(annotations_fname, 'r') as fid:
         vid_sizes[ann_set_id] = fid.get_node('/full_data').shape[0]
 # transform them in offsets
-frame_offset = np.cumsum(vid_sizes) - vid_sizes[0]
+frame_offset = np.concatenate([np.array([0]), np.cumsum(vid_sizes)[:-1]])
 # and add them to the frames
 big_clean_df['frame'] = (
     frame_offset[big_clean_df['video_id']] + big_clean_df['frame_in_vid']
