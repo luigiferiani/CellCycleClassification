@@ -18,12 +18,12 @@ POSSIBLE_DATA_PATHNAMES = [
      # / 'R5C5F1_PCNA_sel_annotations.hdf5'),
      # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'),
     #  / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'),
-     / 'Bergsneider_dl_dataset_20210729.hdf5'),
+     / 'Bergsneider_dl_dataset_20210802.hdf5'),
     (Path.home()
      / 'work_repos/CellCycleClassification/data/'
      # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'),
     #  / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'),
-     / 'Bergsneider_dl_dataset_20210729.hdf5'),
+     / 'Bergsneider_dl_dataset_20210802.hdf5'),
     ]
 
 

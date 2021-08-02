@@ -327,7 +327,8 @@ if __name__ == "__main__":
     work_dir /= 'new_annotated_datasets'
     # dataset_fname = work_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
     # dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
-    dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+    # dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+    dataset_fname = work_dir / 'Bergsneider_dl_dataset_20210802.hdf5'
 
     # parameters
     use_cuda = torch.cuda.is_available()
@@ -338,6 +339,11 @@ if __name__ == "__main__":
     train_data = CellsDataset(dataset_fname, which_set='train', roi_size=48)
     val_data = CellsDataset(dataset_fname, which_set='val', roi_size=48)
     test_data = CellsDataset(dataset_fname, which_set='test', roi_size=48)
+
+    train_data.is_return_extra_info = True
+    val_data.is_return_extra_info = True
+    test_data.is_return_extra_info = True
+# %%
 
     # train_data = CellsDatasetMultiClass(dataset_fname, which_set='train', roi_size=48)
     # val_data = CellsDatasetMultiClass(dataset_fname, which_set='val', roi_size=48)
@@ -360,7 +366,7 @@ if __name__ == "__main__":
         val_data, shuffle=True, batch_size=batch_size, num_workers=4)
     test_loader = DataLoader(
         test_data, shuffle=True, batch_size=batch_size, num_workers=4)
-
+# %%
     # train_loader = DataLoader(
     #     train_data, sampler=train_sampler, batch_size=batch_size, num_workers=4)
     # val_loader = DataLoader(
@@ -368,23 +374,37 @@ if __name__ == "__main__":
     # test_loader = DataLoader(
     #     test_data, sampler=test_sampler, batch_size=batch_size, num_workers=4)
 
+
     # test loading I guess
     labsacc = []
-    for tc, (imgs, labs) in enumerate(train_loader):
+    for tc, (imgs, labs, _, tid, fn) in enumerate(train_loader):
+        if tc > 5:
+            break
         print(imgs.shape, labs.shape)
         labsacc.append(labs)
 
-    for tc, (testimgs, testlabs) in enumerate(test_loader):
+    for tc, (testimgs, testlabs, _, testtid, testfn) in enumerate(test_loader):
+        if tc > 5:
+            break
         print(testimgs.shape)
 
     print(f'{tc} iterations')
 
-
+# %%
     from matplotlib import pyplot as plt
     fig, axs = plt.subplots(1, 2, figsize=(12.8, 4.8))
     axs[0].imshow(testimgs[0].squeeze())
     axs[0].set_title(testlabs[0])
     axs[1].imshow(imgs[1].squeeze())
+    axs[1].set_title(labs[1])
+# %%
+    for img, lab, this_id, this_frame in zip(imgs, labs, tid, fn):
+        fig, ax = plt.subplots()
+        ax.imshow(img.squeeze())
+        ax.set_title(f'label={lab}, track_id={this_id}, frame={this_frame}')
+        fig.show()
+        plt.pause(0.3)
+
     # %%
     for data in [val_data, test_data]:
         data.is_return_extra_info = True

@@ -379,7 +379,8 @@ if __name__ == '__main__':
         data_dir
         / 'new_annotated_datasets'
         # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
-        / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+        # / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+        / 'Bergsneider_dl_dataset_20210802.hdf5'
         )
     model_dir = get_default_log_dir()
     (model_dir / 'reports').mkdir(exist_ok=True, parents=True)
@@ -388,6 +389,8 @@ if __name__ == '__main__':
 
     # model_fnames = [mf for mf in model_fnames
     #                 if '_53' in mf.stem or '_63' in mf.stem]
+    model_fnames = [mf for mf in model_fnames
+                    if 'debug' not in mf.stem]
 
     accs = []
     plt.ioff()
