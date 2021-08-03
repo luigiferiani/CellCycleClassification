@@ -456,7 +456,8 @@ if __name__ == '__main__':
     dataset_fname = (
         data_dir
         / 'new_annotated_datasets'
-        / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+        # / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+        / 'Bergsneider_dl_dataset_20210802.hdf5'
         )
 
     plt.close('all')
@@ -477,7 +478,9 @@ if __name__ == '__main__':
 
 # %% for figures purposes, show how well each model behaves
 
-
+    savedir = (
+        Path.home() /
+        'OneDrive - Imperial College London/Slides/20210809_group_meeting')
     # bin
     fig, ax = plt.subplots()
     crep_bin = get_classification_stats(
@@ -486,7 +489,7 @@ if __name__ == '__main__':
     ax.set_xticklabels(['not S', 'S'])
     ax.set_yticklabels(['not S', 'S'])
     fig.tight_layout()
-    fig.savefig('/Users/lferiani/OneDrive - Imperial College London/Slides/20210125_group_meeting/bin_confusion_matrix.pdf')
+    fig.savefig(savedir / 'bin_confusion_matrix.pdf')
 
     # multi
     fig, ax = plt.subplots()
@@ -496,7 +499,7 @@ if __name__ == '__main__':
     ax.set_xticklabels(['G0/1', 'S', 'G2', 'M'])
     ax.set_yticklabels(['G0/1', 'S', 'G2', 'M'])
     fig.tight_layout()
-    fig.savefig('/Users/lferiani/OneDrive - Imperial College London/Slides/20210125_group_meeting/multi_confusion_matrix.pdf')
+    fig.savefig(savedir / 'multi_confusion_matrix.pdf')
 
     # just probabilities combination
     fig, ax = plt.subplots()
@@ -506,7 +509,7 @@ if __name__ == '__main__':
     ax.set_xticklabels(['G0/1', 'S', 'G2', 'M'])
     ax.set_yticklabels(['G0/1', 'S', 'G2', 'M'])
     fig.tight_layout()
-    fig.savefig('/Users/lferiani/OneDrive - Imperial College London/Slides/20210125_group_meeting/combi_raw_confusion_matrix.pdf')
+    fig.savefig(savedir / 'combi_raw_confusion_matrix.pdf')
 
     # despiked probabilities combination
     fig, ax = plt.subplots()
@@ -516,6 +519,6 @@ if __name__ == '__main__':
     ax.set_xticklabels(['G0/1', 'S', 'G2', 'M'])
     ax.set_yticklabels(['G0/1', 'S', 'G2', 'M'])
     fig.tight_layout()
-    fig.savefig('/Users/lferiani/OneDrive - Imperial College London/Slides/20210125_group_meeting/combi_dk_confusion_matrix.pdf')
+    fig.savefig(savedir / 'combi_dk_confusion_matrix.pdf')
 
 # %%
