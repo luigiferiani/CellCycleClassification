@@ -31,7 +31,8 @@ if __name__ == '__main__':
         data_dir
         / 'new_annotated_datasets'
         # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
-        / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+        # / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+        / 'Bergsneider_dl_dataset_20210802.hdf5'
         )
 
     model_dir = get_default_log_dir()  # points to local dir if no vpn
@@ -44,13 +45,13 @@ if __name__ == '__main__':
     # this is the best binary model and we'll keep using this
     bin_model_vn = 'v_06_60'
     bin_model_fname = [mf for mf in model_fnames
-                       if bin_model_vn in str(mf) and 'best' in str(mf)][0]
+                       if bin_model_vn in str(mf) and 'best' not in str(mf)][0]
     # no plot, just get numbers out
     out = []
     for model_fname in tqdm(model_fnames):
         try:
-            processed_df, info_dict, _, _ = eval_and_postproc(
-                model_fname, bin_model_fname, dataset_fname, is_plot=False)
+            processed_df, info_dict = eval_and_postproc(
+                model_fname, bin_model_fname, dataset_fname, is_plot=False)[:2]
             report = assess_postprocessed(
                 processed_df, info_dict, is_plot=True)
             out.append(report)
@@ -59,7 +60,7 @@ if __name__ == '__main__':
     # and write to csv
     pd.DataFrame(out).sort_values(by='training_session').to_csv(
         model_dir / 'reports' / 'compare_postprocessing_performance.csv',
-        float_format='%.3f')
+        float_format='%.3f', mode='a')
 
     # %%
     # read performance dataframe and rank

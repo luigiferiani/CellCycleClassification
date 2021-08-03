@@ -55,10 +55,9 @@ def get_default_log_dir():
         raise Exception('not coded for windows yet')
 
     if not logdir.exists():
-        from cellcycleclassification import base_path
-        local_logdir = base_path / 'trained_models'
+        from cellcycleclassification import trained_models_path
 
-        logdir = local_logdir
+        logdir = trained_models_path
         warnings.warn(
             f'remote logdir not found, logging instead in {logdir}'
             )

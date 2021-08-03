@@ -8,6 +8,6 @@ Created on Mon Jan 11 18:56:02 2021
 from pathlib import Path
 
 base_path = Path(__file__).parent
-BINARY_MODEL_PATH = base_path / 'trained_models' / 'v_06_60_best.pth'
-MULTICLASS_MODEL_PATH = (
-    base_path / 'trained_models' / 'v_12_63_20201218_213041.pth')
+trained_models_path = base_path / 'trained_models'
+BINARY_MODEL_PATH = trained_models_path / 'v_06_60_20210802_192216.pth'
+MULTICLASS_MODEL_PATH = trained_models_path / 'v_12_63_20210802_192250.pth'
