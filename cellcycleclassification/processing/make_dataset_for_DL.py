@@ -5,7 +5,10 @@ Created on Fri Oct 23 17:58:55 2020
 
 @author: lferiani
 
-Annotations are only labelled in the first frame of each cell cycle stage
+Last modified by Brandon Bergsneider on Wed Aug 4. Modified to include NCI-1944 annotations.
+
+A549 annotations are only labelled in the first frame of each cell cycle stage
+NCI-1944 annotations are labelled in every frame
 For training, all ROIS need to be annotated at all frames
 
 This deals with having multiple annotated files
@@ -118,9 +121,16 @@ def curate_annotations_df(annotations_fname, video_id):
 
 # %% where are things
 # inputs
-work_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-work_dir /= 'new_annotated_datasets'
+# change work_dir to working directory on your local machine
+work_dir = Path('~/OneDrive-ImperialCollegeLondon/Project3/CellCycleClassification/data').expanduser()
+# GemPre files are NCI-1944 cell annotations. R5C5 and Mitotic_A549 files are A549 cell annotations.
 annotations_fnames = [
+    'GemPre_R03C04F01_run2_data_sel_annotations.hdf5',
+    'GemPre_R03C04F02_run2_data_sel_annotations.hdf5',
+    'GemPre_R03C04F03_run2_data_sel_annotations.hdf5',
+    'GemPre_R04C04F01_run2_data_sel_annotations.hdf5',
+    'GemPre_R04C04F02_run2_data_sel_annotations.hdf5',
+    'GemPre_R04C04F03_run2_data_sel_annotations.hdf5',
     'R5C5F1_PCNA_sel_annotations_done_luigi.hdf5',
     'R5C5F2_PCNA_sel_annotations.hdf5',
     'R5C5F3_PCNA_sel_annotations.hdf5',
@@ -130,8 +140,8 @@ annotations_fnames = [
 annotations_fnames = [work_dir / af for af in annotations_fnames]
 
 # output
-# output_hdf5 = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
-output_hdf5 = work_dir / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+# change output_hdf to whatever you want to call it
+output_hdf5 = work_dir / 'Bergsneider_dl_dataset_20210729.hdf5'
 
 # %% load data
 # ann_set_id is the same as video_id in curate_annotations_df:
@@ -168,19 +178,18 @@ big_clean_df['frame'] = (
 
 
 # %% now split curated dataset
-# as of 27/10/2020, let's keep annotations 3 as the test set
-# (it accounts for about 15% of the unique tracks)
+# as of 29/07/2021, let's keep annotation 0 & 8 as the test sets
 # the rest will be split in train and validation according to unique_track_id
 
 # tracks to split
-tracks_to_split = big_clean_df.query('video_id != 2')[
+tracks_to_split = big_clean_df.query('video_id != 0 & video_id != 8')[
     'unique_track_id'].unique()
 
 # use train_test_split to get train/val split
 tracks_train, tracks_val = train_test_split(
     tracks_to_split, test_size=0.2, random_state=20201027)
 # for completeness, let's manualy create the tracks_test array
-tracks_test = big_clean_df.query('video_id == 2')['unique_track_id'].unique()
+tracks_test = big_clean_df.query('video_id == 0 | video_id == 8')['unique_track_id'].unique()
 
 
 # %% get sizes for info only
