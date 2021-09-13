@@ -5,7 +5,8 @@ Created on Fri Oct 23 17:58:55 2020
 
 @author: lferiani
 
-Last modified by Brandon Bergsneider on Wed Aug 4. Modified to include NCI-1944 annotations.
+Last modified by Brandon Bergsneider on Wed Aug 4.
+Modified to include NCI-1944 annotations.
 
 A549 annotations are only labelled in the first frame of each cell cycle stage
 NCI-1944 annotations are labelled in every frame
@@ -21,6 +22,8 @@ import pandas as pd
 from pathlib import Path
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
+
+from cellcycleclassification import DL_DATASET_PATH, MANUAL_ANNOTATIONS_PATH
 
 FILTERS = tables.Filters(
     complevel=5, complib='zlib', shuffle=True, fletcher32=True)
@@ -121,9 +124,9 @@ def curate_annotations_df(annotations_fname, video_id):
 
 # %% where are things
 # inputs
-# change work_dir to working directory on your local machine
-work_dir = Path('~/OneDrive-ImperialCollegeLondon/Project3/CellCycleClassification/data').expanduser()
-# GemPre files are NCI-1944 cell annotations. R5C5 and Mitotic_A549 files are A549 cell annotations.
+work_dir = MANUAL_ANNOTATIONS_PATH
+# GemPre files are NCI-1944 cell annotations.
+# R5C5 and Mitotic_A549 files are A549 cell annotations.
 annotations_fnames = [
     'GemPre_R03C04F01_run2_data_sel_annotations.hdf5',
     'GemPre_R03C04F02_run2_data_sel_annotations.hdf5',
@@ -141,7 +144,7 @@ annotations_fnames = [work_dir / af for af in annotations_fnames]
 
 # output
 # change output_hdf to whatever you want to call it
-output_hdf5 = work_dir / 'Bergsneider_dl_dataset_20210729.hdf5'
+output_hdf5 = DL_DATASET_PATH / 'Bergsneider_dl_dataset_20210729.hdf5'
 
 # %% load data
 # ann_set_id is the same as video_id in curate_annotations_df:
@@ -189,7 +192,8 @@ tracks_to_split = big_clean_df.query('video_id != 0 & video_id != 8')[
 tracks_train, tracks_val = train_test_split(
     tracks_to_split, test_size=0.2, random_state=20201027)
 # for completeness, let's manualy create the tracks_test array
-tracks_test = big_clean_df.query('video_id == 0 | video_id == 8')['unique_track_id'].unique()
+tracks_test = big_clean_df.query(
+    'video_id == 0 | video_id == 8')['unique_track_id'].unique()
 
 
 # %% get sizes for info only
@@ -265,8 +269,4 @@ with tables.File(output_hdf5, 'a') as fid:
         'full_data',
         obj=all_full_data,
         filters=FILTERS)
-
-
-
-
 
