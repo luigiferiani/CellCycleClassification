@@ -321,14 +321,13 @@ class CellsDatasetMultiClassNew(CellsDatasetBase):
 if __name__ == "__main__":
 
     from pathlib import Path
+    from cellcycleclassification import DL_DATASET_PATH
 
     # where are things?
-    work_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-    work_dir /= 'new_annotated_datasets'
-    # dataset_fname = work_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
-    # dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
-    # dataset_fname = work_dir / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
-    dataset_fname = work_dir / 'Bergsneider_dl_dataset_20210802.hdf5'
+    # dataset_fname = DL_DATASET_PATH / 'R5C5F1_PCNA_sel_annotations.hdf5'
+    # dataset_fname = DL_DATASET_PATH / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
+    # dataset_fname = DL_DATASET_PATH / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
+    dataset_fname = DL_DATASET_PATH / 'Bergsneider_dl_dataset_20210802.hdf5'
 
     # parameters
     use_cuda = torch.cuda.is_available()

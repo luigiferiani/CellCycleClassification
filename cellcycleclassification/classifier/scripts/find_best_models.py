@@ -18,18 +18,16 @@ from sklearn.metrics import (
 from cellcycleclassification.classifier.utils import get_default_log_dir
 from cellcycleclassification.classifier.scripts.post_processing import (
     eval_and_postproc, assess_postprocessed)
-
+from cellcycleclassification import DL_DATASET_PATH
 
 # %%
 
 if __name__ == '__main__':
 
     # where are things
-    data_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-    # dataset_fname = data_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
+    # dataset_fname = DL_DATASET_PATH / 'R5C5F1_PCNA_sel_annotations.hdf5'
     dataset_fname = (
-        data_dir
-        / 'new_annotated_datasets'
+        DL_DATASET_PATH
         # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
         # / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
         / 'Bergsneider_dl_dataset_20210802.hdf5'

@@ -448,14 +448,12 @@ def assess_postprocessed(processed_df, info_dict, is_plot=False):
 # %%
 if __name__ == '__main__':
     from cellcycleclassification import (
-            BINARY_MODEL_PATH, MULTICLASS_MODEL_PATH)
+            BINARY_MODEL_PATH, MULTICLASS_MODEL_PATH, DL_DATASET_PATH)
 
     # where are things
-    data_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-    # dataset_fname = data_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
+    # dataset_fname = DL_DATASET_PATH / 'R5C5F1_PCNA_sel_annotations.hdf5'
     dataset_fname = (
-        data_dir
-        / 'new_annotated_datasets'
+        DL_DATASET_PATH
         # / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
         / 'Bergsneider_dl_dataset_20210802.hdf5'
         )

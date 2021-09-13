@@ -372,12 +372,10 @@ def evaluate_and_report_performance_one_trained_model(
 
 if __name__ == '__main__':
 
+    from cellcycleclassification import DL_DATASET_PATH
     # where are things
-    data_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-    # dataset_fname = data_dir / 'R5C5F1_PCNA_sel_annotations.hdf5'
     dataset_fname = (
-        data_dir
-        / 'new_annotated_datasets'
+        DL_DATASET_PATH
         # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'
         # / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'
         / 'Bergsneider_dl_dataset_20210802.hdf5'

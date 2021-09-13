@@ -17,6 +17,8 @@ import shutil
 import pandas as pd
 from pathlib import Path
 
+from cellcycleclassification import MANUAL_ANNOTATIONS_PATH
+
 COLS_DICT = {
     'frame_number': 'frame',
     'x': 'x_center',
@@ -26,8 +28,8 @@ COLS_DICT = {
 INT_COLS = ['track_id', 'frame', 'label_id']
 
 # where are things?
-src_dir = Path('~/work_repos/CellCycleClassification/data').expanduser()
-dst_dir = src_dir / 'new_annotated_datasets'
+src_dir = MANUAL_ANNOTATIONS_PATH.parent / 'videos_and_old_annotations'
+dst_dir = MANUAL_ANNOTATIONS_PATH
 
 dataset_stem = 'Mitotic_A549_nuclei'
 src_hdf5_fname = src_dir / (dataset_stem + '.hdf5')

@@ -11,30 +11,27 @@ import warnings
 import platform
 from pathlib import Path
 
+from cellcycleclassification import DL_DATASET_PATH
 
-POSSIBLE_DATA_PATHNAMES = [
-    (Path.home()
-     / 'work_repos/CellCycleClassification/data/new_annotated_datasets'
-     # / 'R5C5F1_PCNA_sel_annotations.hdf5'),
-     # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'),
+POSSIBLE_DATA_PATHNAME = (
+    DL_DATASET_PATH
+    # / 'R5C5F1_PCNA_sel_annotations.hdf5'),
+    # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'),
     #  / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'),
-     / 'Bergsneider_dl_dataset_20210802.hdf5'),
-    (Path.home()
-     / 'work_repos/CellCycleClassification/data/'
-     # / 'R5C5F_PCNA_dl_dataset_20201027.hdf5'),
-    #  / 'R5C5F_PCNA_dl_dataset_20201216.hdf5'),
-     / 'Bergsneider_dl_dataset_20210802.hdf5'),
-    ]
+    / 'Bergsneider_dl_dataset_20210802.hdf5'
+    )
 
 
 def get_default_data_path():
+
     out = None
-    for candidate in POSSIBLE_DATA_PATHNAMES:
-        if candidate.exists():
-            out = candidate
-            break
+    if POSSIBLE_DATA_PATHNAME.exists():
+        out = POSSIBLE_DATA_PATHNAME
+
     if out is None:
-        raise Exception('Cannot find the dataset in the default paths')
+        raise Exception(
+            f'Dataset not found at default path {POSSIBLE_DATA_PATHNAME}'
+            )
     return out
 
 
