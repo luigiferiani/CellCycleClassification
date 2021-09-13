@@ -473,7 +473,7 @@ if __name__ == '__main__':
 
     processed_df = processed_df.drop(
         columns=['ypred_or', 'ypred_or_dk', 'or_forbidden'])
-    plot_post_processing(processed_df, probas_combined, imgs)
+    # plot_post_processing(processed_df, probas_combined, imgs)
 
 
 # %% for figures purposes, show how well each model behaves

@@ -274,7 +274,7 @@ def evaluate_performance_one_trained_model(
     # get model and validation dataset
     model, criterion, val_dataset = get_model_datasets_criterion(
         train_pars['model_name'],
-        which_splits='val',
+        which_splits='test',
         data_path=dataset_fname,
         roi_size=train_pars['roi_size'])
     val_dataset.set_use_transforms(False)
@@ -390,8 +390,8 @@ if __name__ == '__main__':
     # model_fnames = [mf for mf in model_fnames
     #                 if '_53' in mf.stem or '_63' in mf.stem]
     model_fnames = [mf for mf in model_fnames
-                    if 'debug' not in mf.stem]
-
+                    if '20210802' in mf.stem]
+# %%
     accs = []
     plt.ioff()
     for model_fname in tqdm(model_fnames):
@@ -403,12 +403,9 @@ if __name__ == '__main__':
     #     model_fnames[80], dataset_fname)
 
 # %%
-    # model_fname = model_dir / 'v_14_60_20201121_231930/v_14_60_20201121_231930.pth'
-
-    # (
-    #  preds, labels, imgs, isfirstinstage, track_id, frame_number,
-    #  checkpoint, train_pars
-    #  ) = evaluate_performance_one_trained_model(model_fname, dataset_fname, is_evaluate_xvalset=True)
+    model_fname = model_fnames[0]
+    out = evaluate_performance_one_trained_model(
+         model_fname, dataset_fname, is_evaluate_xvalset=True)
 
 
 
